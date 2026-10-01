@@ -1,0 +1,91 @@
+import express from 'express'
+import cors from 'cors'
+import dotenv from 'dotenv'
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
+import apiRoutes from './routes/index.js'
+import errorHandler from './middlewares/errorHandler.js'
+import logger from './utils/logger.js'
+import { testConnection } from './config/db.js'
+
+dotenv.config()
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+const app = express()
+const PORT = process.env.PORT || 3001
+
+// Middlewares
+app.use(cors())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
+// Logger middleware cho request
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.originalUrl}`)
+  next()
+})
+
+// Phục vụ thư mục static public (Chứa React build và uploads)
+const publicDir = path.join(__dirname, 'public')
+const uploadsDir = path.join(publicDir, 'uploads')
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true })
+}
+
+// Set no-cache specifically for index.html so client updates immediately after build
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path.endsWith('.html') || !path.extname(req.path)) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+  }
+  next()
+})
+
+app.use(express.static(publicDir, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    }
+  }
+}))
+app.use('/uploads', express.static(uploadsDir))
+
+// API Routes
+app.use('/api', apiRoutes)
+
+// Fallback SPA Routing cho React (hoặc view khi chưa build)
+app.get('*', (req, res) => {
+  const indexPath = path.join(publicDir, 'index.html')
+  if (fs.existsSync(indexPath)) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    return res.sendFile(indexPath)
+  }
+  return res.sendFile(path.join(__dirname, 'views', '404.html'))
+})
+
+// Central Error Handler
+app.use(errorHandler)
+
+// Khởi động server
+app.listen(PORT, async () => {
+  console.log('====================================================')
+  console.log(`🚀 QA Stories Server running on http://localhost:${PORT}`)
+  console.log(`📁 Public folder: ${publicDir}`)
+  console.log('====================================================')
+
+  // Kiểm tra kết nối MySQL & Khởi tạo các bảng mở rộng
+  const dbOk = await testConnection()
+  if (dbOk) {
+    try {
+      const { Package } = await import('./models/Package.js')
+      await Package.ensureTable()
+    } catch (e) {
+      console.warn('⚠️ Lỗi khởi tạo bảng packages:', e.message)
+    }
+  }
+})
+
+export default app

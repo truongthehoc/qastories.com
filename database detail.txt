@@ -1,0 +1,47 @@
+=====================================================
+QA STORIES - DATABASE INFORMATION & CONFIGURATION
+=====================================================
+
+1. CẤU HÌNH KẾT NỐI (File .env)
+- Host: localhost (hoặc IP VPS)
+- Port: 3306
+- User: root
+- Password: (mặc định trống nếu dùng XAMPP / Laragon)
+- Database Name: qastories
+
+2. DANH SÁCH CÁC BẢNG (TABLES)
+
+A. Bảng `bookings` (Quản lý các yêu cầu đặt lịch chụp ảnh)
+- id: INT AUTO_INCREMENT PRIMARY KEY
+- name: VARCHAR(255) - Họ tên bố/mẹ
+- phone: VARCHAR(50) - Số điện thoại
+- email: VARCHAR(255) - Địa chỉ email
+- date: VARCHAR(50) - Ngày dự kiến chụp ảnh
+- service: VARCHAR(255) - Tên gói dịch vụ (Newborn, 100 ngày, Sinh nhật, v.v.)
+- note: TEXT - Ghi chú riêng từ khách hàng
+- status: ENUM('pending', 'confirmed', 'completed', 'cancelled') - Trạng thái xử lý
+- created_at: TIMESTAMP - Thời gian gửi đặt lịch
+- updated_at: TIMESTAMP - Thời gian cập nhật trạng thái
+
+B. Bảng `albums` (Quản lý danh sách album ảnh)
+- id: INT AUTO_INCREMENT PRIMARY KEY
+- title: VARCHAR(255) - Tên album
+- slug: VARCHAR(255) - Đường dẫn thân thiện
+- category: VARCHAR(100) - Phân loại (newborn, 100days, 1year, family)
+- cover_image: VARCHAR(500) - Đường dẫn ảnh bìa
+- description: TEXT - Mô tả ngắn về concept
+- created_at: TIMESTAMP
+
+C. Bảng `photos` (Lưu thông tin ảnh được tải lên)
+- id: INT AUTO_INCREMENT PRIMARY KEY
+- album_id: INT - ID album liên kết (FK)
+- filename: VARCHAR(255) - Tên file lưu trên ổ đĩa
+- original_name: VARCHAR(255) - Tên file gốc
+- size: INT - Dung lượng file (bytes)
+- url: VARCHAR(500) - Đường dẫn truy cập ảnh qua web (/uploads/...)
+- created_at: TIMESTAMP
+
+3. KHỞI TẠO CƠ SỞ DỮ LIỆU
+- Cách 1 (Khuyên dùng trên Windows): Nhấp đúp vào file `setup-db.bat`
+- Cách 2: Chạy lệnh terminal: `npm run setup:db`
+- Cách 3: Import trực tiếp file `database/schema.sql` vào phpMyAdmin / MySQL Workbench
