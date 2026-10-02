@@ -162,7 +162,7 @@ export default function FooterManager() {
   const brandAddress = form.footer_custom_address || globalSettings?.brand_address || '123 Đường ABC, Quận 1, TP. Hồ Chí Minh'
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-16">
+    <div className="space-y-6 w-full pb-16">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
         <div className="flex items-center gap-3.5">
@@ -248,7 +248,7 @@ export default function FooterManager() {
             {
               key: 'footer_social_enabled',
               title: 'Nút Mạng Xã Hội',
-              desc: 'Hiển thị các icon Facebook, Instagram, Youtube, Zalo ở Cột 1',
+              desc: 'Hiển thị các icon mạng xã hội có cấu hình URL tại Cài Đặt > Mạng Xã Hội (Facebook, Instagram, Zalo, YouTube, TikTok)',
               icon: Share2,
             },
             {
@@ -555,15 +555,38 @@ export default function FooterManager() {
                         {brandSlogan}
                       </p>
                       {form.footer_social_enabled === '1' && (
-                        <div className="flex items-center gap-2 pt-1">
-                          {['Facebook', 'Instagram', 'Youtube', 'Zalo'].map((s) => (
-                            <div
-                              key={s}
-                              className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-[10px] text-gray-300 font-semibold"
-                            >
-                              {s[0]}
-                            </div>
-                          ))}
+                        <div className="pt-1">
+                          {(() => {
+                            const activeSocials = [
+                              { name: 'Facebook', href: globalSettings?.brand_facebook },
+                              { name: 'Instagram', href: globalSettings?.brand_instagram },
+                              { name: 'Zalo', href: globalSettings?.brand_zalo },
+                              { name: 'YouTube', href: globalSettings?.brand_youtube },
+                              { name: 'TikTok', href: globalSettings?.brand_tiktok },
+                            ].filter((s) => s.href && String(s.href).trim() !== '' && String(s.href).trim() !== '#')
+
+                            if (activeSocials.length === 0) {
+                              return (
+                                <p className="text-[11px] text-amber-400/90 italic">
+                                  (Chưa có liên kết mạng xã hội nào trong Cài Đặt &gt; Mạng Xã Hội)
+                                </p>
+                              )
+                            }
+
+                            return (
+                              <div className="flex flex-wrap items-center gap-2">
+                                {activeSocials.map((s) => (
+                                  <div
+                                    key={s.name}
+                                    className="px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/10 flex items-center gap-1.5 text-[10.5px] text-gray-200 font-medium"
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                    <span>{s.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          })()}
                         </div>
                       )}
                     </div>
