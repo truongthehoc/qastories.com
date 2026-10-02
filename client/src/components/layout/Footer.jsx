@@ -13,22 +13,26 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 sm:gap-10 lg:gap-12">
           {/* Brand Col */}
           <div className="lg:col-span-5">
-            <div className="flex items-center gap-3 mb-4">
+            <Link
+              to="/"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="inline-flex items-center gap-3 mb-4 group cursor-pointer"
+            >
               {settings?.brand_logo ? (
                 <img
                   src={settings.brand_logo}
                   alt={settings?.brand_name || 'QA Stories'}
-                  className="h-9 sm:h-10 w-auto max-w-[140px] object-contain"
+                  className="h-9 sm:h-10 w-auto max-w-[140px] object-contain group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
-                <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30">
+                <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform duration-300">
                   <Camera size={20} className="text-white" />
                 </div>
               )}
-              <div className="font-heading font-bold text-xl sm:text-2xl text-white tracking-tight">
+              <div className="font-heading font-bold text-xl sm:text-2xl text-white tracking-tight group-hover:text-primary transition-colors duration-300">
                 {settings?.brand_name || 'QA Stories'}
               </div>
-            </div>
+            </Link>
             <p className="font-body text-gray-400 text-xs sm:text-sm leading-relaxed mb-6 max-w-md">
               {settings?.brand_slogan ||
                 'Chúng tôi tin rằng từng tiếng cười khúc khích, từng ánh mắt trong veo và khoảnh khắc đầu đời của bé là món quà quý giá nhất. Hãy để QA Stories đồng hành lưu giữ câu chuyện thiên thần của gia đình bạn.'}
