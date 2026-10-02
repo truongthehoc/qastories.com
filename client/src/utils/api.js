@@ -2,8 +2,38 @@ import { optimizeFiles } from './imageOptimizer.js'
 
 const API_BASE = '/api'
 
+// Bộ nhớ đệm phía client (In-memory TTL cache)
+const apiCache = new Map()
+const DEFAULT_CACHE_TTL = 60 * 1000 // 60 giây
+
+export function clearApiCache(prefix = '') {
+  if (!prefix) {
+    apiCache.clear()
+    return
+  }
+  for (const key of apiCache.keys()) {
+    if (key.startsWith(prefix)) {
+      apiCache.delete(key)
+    }
+  }
+}
+
 export async function request(endpoint, options = {}) {
+  const isGet = !options.method || options.method.toUpperCase() === 'GET'
   const token = localStorage.getItem('qastories_admin_token')
+
+  // Kiểm tra cache cho các request GET không yêu cầu bypass
+  const cacheKey = `${endpoint}_${token || 'guest'}`
+  const bypassCache = options.bypassCache === true
+  const cacheTtl = options.cacheTtl || DEFAULT_CACHE_TTL
+
+  if (isGet && !bypassCache && apiCache.has(cacheKey)) {
+    const cached = apiCache.get(cacheKey)
+    if (Date.now() - cached.timestamp < cacheTtl) {
+      return cached.data
+    }
+    apiCache.delete(cacheKey)
+  }
 
   const headers = {
     ...(options.headers || {}),
@@ -33,6 +63,19 @@ export async function request(endpoint, options = {}) {
     throw error
   }
 
+  // Lưu cache nếu là request GET thành công
+  if (isGet && !bypassCache && response.ok) {
+    apiCache.set(cacheKey, {
+      data,
+      timestamp: Date.now(),
+    })
+  }
+
+  // Nếu là thao tác ghi (POST/PUT/PATCH/DELETE), tự động xóa cache liên quan
+  if (!isGet) {
+    clearApiCache()
+  }
+
   return data
 }
 
@@ -58,6 +101,8 @@ export const api = {
     }),
   delete: (endpoint, options = {}) => request(endpoint, { ...options, method: 'DELETE' }),
 
+  clearCache: clearApiCache,
+
   // Helper upload ảnh (Tự động tối ưu nén kích thước & độ phân giải trước khi gửi)
   uploadPhotos: async (files, category = 'general') => {
     let optimizedList = files
@@ -79,10 +124,12 @@ export const api = {
     for (let i = 0; i < optimizedList.length; i++) {
       formData.append('photos', optimizedList[i])
     }
-    return request('/upload', {
+    const res = await request('/upload', {
       method: 'POST',
       body: formData,
     })
+    clearApiCache()
+    return res
   },
 }
 

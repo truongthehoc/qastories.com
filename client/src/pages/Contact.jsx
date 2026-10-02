@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, Mail, MapPin, Clock, CheckCircle2, Facebook, Instagram, Send, Calendar, X } from 'lucide-react'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
+import { useSettings } from '../context/SettingsContext'
+import SEO from '../components/ui/SEO'
+import api from '../utils/api'
 
 const defaultServices = [
   'Gói Chụp Sơ Sinh (Newborn 0 - 30 ngày)',
@@ -23,6 +26,7 @@ const formatDateDisplay = (isoDate) => {
 }
 
 export default function Contact() {
+  const { settings } = useSettings()
   const [servicesList, setServicesList] = useState(defaultServices)
   const [form, setForm] = useState({
     name: '',
@@ -48,12 +52,12 @@ export default function Contact() {
   }
 
   useEffect(() => {
+    let isMounted = true
     const fetchPackages = async () => {
       try {
-        const res = await fetch('/api/packages')
-        const data = await res.json()
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          const names = data.data.map((p) => p.name)
+        const res = await api.get('/packages')
+        if (isMounted && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const names = res.data.map((p) => p.name)
           if (!names.includes('Yêu cầu đặc biệt khác')) {
             names.push('Yêu cầu đặc biệt khác')
           }
@@ -64,6 +68,9 @@ export default function Contact() {
       }
     }
     fetchPackages()
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const handleChange = (e) => {
@@ -75,17 +82,12 @@ export default function Contact() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      const data = await res.json()
-      if (data.success) {
+      const res = await api.post('/contact', form)
+      if (res.success) {
         setSuccess(true)
         setForm({ name: '', phone: '', email: '', date: '', service: '', note: '' })
       } else {
-        setError(data.message || 'Có lỗi xảy ra, vui lòng thử lại.')
+        setError(res.message || 'Có lỗi xảy ra, vui lòng thử lại.')
       }
     } catch {
       // Fallback message for demo/offline
@@ -96,8 +98,20 @@ export default function Contact() {
     }
   }
 
+  const siteName = settings?.brand_name || 'QA Stories'
+  const brandPhone = settings?.brand_phone || '0901 234 567'
+  const brandEmail = settings?.brand_email || 'hello@qastories.vn'
+  const brandAddress = settings?.brand_address || '123 Đường ABC, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh'
+  const brandFacebook = settings?.brand_facebook || '#'
+  const brandInstagram = settings?.brand_instagram || '#'
+
   return (
     <div className="pt-20">
+      <SEO
+        title="Liên Hệ & Đặt Lịch Chụp Ảnh"
+        description={`Đặt lịch chụp ảnh sơ sinh newborn, thôi nôi và gia đình cùng ${siteName} Studio. Hỗ trợ tư vấn tận tâm 24/7.`}
+      />
+
       {/* 1. Header */}
       <section className="py-24 bg-gradient-to-b from-orange-50/60 via-offwhite to-white text-center relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -111,7 +125,7 @@ export default function Contact() {
             </h1>
             <p className="section-subtitle max-w-2xl mx-auto">
               Điền thông tin đặt lịch bên dưới hoặc gọi hotline để được hỗ trợ nhanh nhất.{' '}
-              <strong className="text-primary font-bold whitespace-nowrap">QA Stories</strong> sẽ liên hệ xác nhận trong vòng 24 giờ.
+              <strong className="text-primary font-bold whitespace-nowrap">{siteName}</strong> sẽ liên hệ xác nhận trong vòng 24 giờ.
             </p>
           </ScrollReveal>
         </div>
@@ -134,19 +148,19 @@ export default function Contact() {
                       {
                         icon: Phone,
                         label: 'Hotline / Zalo Tư Vấn',
-                        value: '0901 234 567',
-                        href: 'tel:0901234567',
+                        value: brandPhone,
+                        href: `tel:${brandPhone.replace(/\s+/g, '')}`,
                       },
                       {
                         icon: Mail,
                         label: 'Email Tiếp Nhận',
-                        value: 'hello@qastories.vn',
-                        href: 'mailto:hello@qastories.vn',
+                        value: brandEmail,
+                        href: `mailto:${brandEmail}`,
                       },
                       {
                         icon: MapPin,
                         label: 'Địa Chỉ Studio',
-                        value: '123 Đường ABC, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+                        value: brandAddress,
                         href: null,
                       },
                       {
@@ -183,12 +197,14 @@ export default function Contact() {
                     </h3>
                     <div className="flex gap-3">
                       {[
-                        { icon: Facebook, href: '#', label: 'Facebook QA Stories' },
-                        { icon: Instagram, href: '#', label: 'Instagram @qastories' },
+                        { icon: Facebook, href: brandFacebook, label: 'Facebook QA Stories' },
+                        { icon: Instagram, href: brandInstagram, label: 'Instagram @qastories' },
                       ].map(({ icon: Icon, href, label }) => (
                         <a
                           key={label}
                           href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           aria-label={label}
                           className="px-4 py-2 rounded-xl bg-white border border-orange-100 flex items-center gap-2 text-sm font-semibold text-gray-700 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm"
                         >
@@ -248,7 +264,7 @@ export default function Contact() {
                         </h3>
                         <p className="font-body text-gray-600 max-w-md mx-auto mb-8 leading-relaxed">
                           Cảm ơn bạn đã tin tưởng{' '}
-                          <strong className="text-primary font-bold whitespace-nowrap">QA Stories</strong>. Ekip tư vấn sẽ gọi điện xác nhận chi tiết buổi chụp trong thời gian sớm nhất.
+                          <strong className="text-primary font-bold whitespace-nowrap">{siteName}</strong>. Ekip tư vấn sẽ gọi điện xác nhận chi tiết buổi chụp trong thời gian sớm nhất.
                         </p>
                         <button
                           onClick={() => setSuccess(false)}

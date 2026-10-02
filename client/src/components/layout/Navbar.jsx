@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Menu, X, Camera, Phone } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useSettings } from '../../context/SettingsContext'
 
 const navLinks = [
@@ -15,16 +15,10 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
-  const navigate = useNavigate()
   const { settings } = useSettings()
 
-  const handleNavigate = (path) => {
+  const closeMenu = () => {
     setIsOpen(false)
-    if (location.pathname === path) {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    } else {
-      navigate(path)
-    }
   }
 
   useEffect(() => {
@@ -33,12 +27,12 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Auto close menu when route changes
+  // Luôn đóng menu khi route thay đổi
   useEffect(() => {
     setIsOpen(false)
-  }, [location.pathname, location.search, location.hash, location.key])
+  }, [location.pathname, location.search, location.hash])
 
-  // Lock body scroll when mobile menu is open
+  // Khóa cuộn trang khi menu mobile đang mở
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -50,7 +44,7 @@ export default function Navbar() {
     }
   }, [isOpen])
 
-  // Close on ESC or resize
+  // Đóng khi nhấn ESC hoặc màn hình co giãn lớn hơn 768px
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') setIsOpen(false)
@@ -99,7 +93,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3 group">
+            <Link to="/" onClick={closeMenu} className="flex items-center gap-3 group">
               {settings?.brand_logo ? (
                 <img
                   src={settings.brand_logo}
@@ -158,9 +152,10 @@ export default function Navbar() {
 
             {/* Mobile Menu Button */}
             <button
-              onClick={() => setIsOpen(!isOpen)}
+              type="button"
+              onClick={() => setIsOpen((prev) => !prev)}
               aria-label={isOpen ? 'Đóng menu' : 'Mở menu'}
-              className={`md:hidden p-2.5 rounded-xl transition-all duration-200 active:scale-90 ${
+              className={`md:hidden p-2.5 rounded-xl transition-all duration-200 active:scale-90 cursor-pointer ${
                 isHeaderWhite
                   ? 'text-primary bg-orange-50 hover:bg-orange-100'
                   : 'text-white hover:bg-white/10'
@@ -171,69 +166,63 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Dropdown Menu */}
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              style={{ backgroundColor: '#ffffff', backgroundImage: 'none' }}
-              className="md:hidden absolute top-[68px] left-0 right-0 w-full bg-white border-b border-gray-100 shadow-2xl px-6 py-6 flex flex-col items-center justify-center text-center space-y-4 z-50 font-mulish"
-            >
-              {/* Nav Links: font Mulish, Centered, Slim font weight, with Subtle Gray Dividers */}
-              <div className="w-full max-w-[280px] mx-auto flex flex-col divide-y divide-gray-100">
-                {visibleNavLinks.map((link) => {
-                  const active = location.pathname === link.path
-                  return (
-                    <button
-                      key={link.path}
-                      type="button"
-                      onClick={() => handleNavigate(link.path)}
-                      className={`w-full block py-3.5 text-center font-mulish text-[16px] tracking-normal transition-colors duration-200 cursor-pointer select-none active:scale-95 ${
-                        active
-                          ? 'text-primary font-bold'
-                          : 'text-gray-700 hover:text-primary active:text-primary font-normal'
-                      }`}
-                    >
-                      <span>{link.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Action Link: Đặt Lịch Tư Vấn */}
-              {contactEnabled && (
-                <div className="pt-2 w-full flex justify-center font-mulish">
-                  <button
-                    type="button"
-                    onClick={() => handleNavigate('/contact')}
-                    className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-primary border-b border-gray-200 hover:border-primary pb-1 transition-colors cursor-pointer select-none"
+        {/* Mobile Dropdown Menu (Direct conditional render - Closes instantly without freezing during lazy load) */}
+        {isOpen && (
+          <div
+            style={{ backgroundColor: '#ffffff', backgroundImage: 'none' }}
+            className="md:hidden absolute top-[68px] left-0 right-0 w-full bg-white border-b border-gray-100 shadow-2xl px-6 py-6 flex flex-col items-center justify-center text-center space-y-4 z-50 font-mulish animate-fade-in"
+          >
+            {/* Nav Links: Direct Link with instant close */}
+            <div className="w-full max-w-[280px] mx-auto flex flex-col divide-y divide-gray-100">
+              {visibleNavLinks.map((link) => {
+                const active = location.pathname === link.path
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => {
+                      closeMenu()
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
+                    className={`w-full block py-3.5 text-center font-mulish text-[16px] tracking-normal transition-colors duration-200 cursor-pointer select-none active:scale-95 ${
+                      active
+                        ? 'text-primary font-bold'
+                        : 'text-gray-700 hover:text-primary active:text-primary font-normal'
+                    }`}
                   >
-                    <Phone size={13} />
-                    <span>Đặt lịch tư vấn trực tuyến</span>
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+                    <span>{link.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+
+            {/* Action Link: Đặt Lịch Tư Vấn */}
+            {contactEnabled && (
+              <div className="pt-2 w-full flex justify-center font-mulish">
+                <Link
+                  to="/contact"
+                  onClick={() => {
+                    closeMenu()
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-primary border-b border-gray-200 hover:border-primary pb-1 transition-colors cursor-pointer select-none"
+                >
+                  <Phone size={13} />
+                  <span>Đặt lịch tư vấn trực tuyến</span>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
       </header>
 
       {/* Backdrop overlay */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={() => setIsOpen(false)}
-            className="md:hidden fixed inset-0 top-[68px] bg-black/40 backdrop-blur-xs z-40"
-          />
-        )}
-      </AnimatePresence>
+      {isOpen && (
+        <div
+          onClick={closeMenu}
+          className="md:hidden fixed inset-0 top-[68px] bg-black/40 backdrop-blur-xs z-40 transition-opacity duration-200 animate-fade-in"
+        />
+      )}
     </>
   )
 }

@@ -12,10 +12,11 @@ import { Link } from 'react-router-dom'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import { albumsData as defaultAlbums } from '../data/albumsData'
 import { useSettings } from '../context/SettingsContext'
+import SEO from '../components/ui/SEO'
 import api from '../utils/api'
 
 export default function Album() {
-  const { settings, refreshSettings } = useSettings()
+  const { settings } = useSettings()
   const [activeTab, setActiveTab] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [albums, setAlbums] = useState(defaultAlbums)
@@ -23,6 +24,7 @@ export default function Album() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    let isMounted = true
     const fetchData = async () => {
       try {
         setLoading(true)
@@ -30,6 +32,8 @@ export default function Album() {
           api.get('/albums'),
           api.get('/packages'),
         ])
+
+        if (!isMounted) return
 
         if (pkgRes.success && pkgRes.data) {
           const pkgs = Array.isArray(pkgRes.data) ? pkgRes.data : [pkgRes.data]
@@ -64,10 +68,13 @@ export default function Album() {
       } catch (err) {
         console.warn('Using local albums data fallback:', err.message)
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
     fetchData()
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const categories = useMemo(() => {
@@ -130,6 +137,11 @@ export default function Album() {
 
   return (
     <div className="pt-20">
+      <SEO
+        title="Bộ Sưu Tập Concept Nghệ Thuật"
+        description="Khám phá các album ảnh sơ sinh newborn, thôi nôi, 100 ngày tuổi và gia đình được thực hiện tỉ mỉ tại QA Stories."
+      />
+
       {/* 1. Header Banner with Search Field */}
       <section className="py-12 sm:py-16 bg-gradient-to-b from-orange-50/60 via-offwhite to-white text-center relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -246,6 +258,7 @@ export default function Album() {
                           src={album.cover}
                           alt={album.title}
                           loading="lazy"
+                          decoding="async"
                           onError={(e) => {
                             e.target.onerror = null
                             e.target.src = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85'
@@ -319,17 +332,27 @@ export default function Album() {
           <div className="max-w-4xl mx-auto px-4 relative z-10">
             <ScrollReveal>
               <h2 className="section-title text-white mb-4">
-                Bố Mẹ Đã Chọn Được Concept Ưng Ý Cho Bé Chưa?
+                Bạn Đã Chọn Được Concept Ưng Ý Cho Bé?
               </h2>
-              <p className="font-body text-white/90 text-base sm:text-lg mb-8 max-w-xl mx-auto">
-                Hãy liên hệ với chúng tôi để được tư vấn miễn phí về trang phục, bối cảnh và gói chụp phù hợp nhất!
+              <p className="font-body text-white/90 text-base mb-8 max-w-xl mx-auto">
+                Liên hệ ngay với QA Stories để được tư vấn concept chi tiết, lịch chụp và những ưu đãi hấp dẫn nhất dành riêng cho bé yêu.
               </p>
-              <Link
-                to="/contact"
-                className="btn-white text-base px-8 py-4 text-primary font-bold shadow-xl inline-flex items-center gap-2"
-              >
-                Đặt Lịch Tư Vấn Ngay <ArrowRight size={18} />
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <Link
+                  to="/contact"
+                  className="btn-white text-base px-8 py-3.5 text-primary font-bold shadow-xl"
+                >
+                  Tư Vấn & Đặt Lịch Ngay <ArrowRight size={16} />
+                </Link>
+                {settings?.brand_phone && (
+                  <a
+                    href={`tel:${settings.brand_phone.replace(/\s+/g, '')}`}
+                    className="btn-outline border-white text-white hover:bg-white hover:text-primary text-base px-8 py-3.5"
+                  >
+                    Hotline: {settings.brand_phone}
+                  </a>
+                )}
+              </div>
             </ScrollReveal>
           </div>
         </section>

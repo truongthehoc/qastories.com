@@ -15,6 +15,7 @@ import {
 import { albumsData as defaultAlbums } from '../data/albumsData'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import { useSettings } from '../context/SettingsContext'
+import SEO from '../components/ui/SEO'
 import api from '../utils/api'
 
 export default function AlbumDetail() {
@@ -48,12 +49,15 @@ export default function AlbumDetail() {
 
   // Fetch dynamic album data from API
   useEffect(() => {
+    let isMounted = true
     const fetchDetail = async () => {
       try {
         const [detailRes, listRes] = await Promise.all([
           api.get(`/albums/detail/${id}`),
           api.get('/albums'),
         ])
+
+        if (!isMounted) return
 
         if (listRes.success && listRes.data && listRes.data.length > 0) {
           setAllAlbums(
@@ -98,10 +102,13 @@ export default function AlbumDetail() {
         const local = defaultAlbums.find(
           (a) => a.id === parseInt(id, 10) || a.slug === id
         )
-        if (local) setAlbum(local)
+        if (local && isMounted) setAlbum(local)
       }
     }
     fetchDetail()
+    return () => {
+      isMounted = false
+    }
   }, [id])
 
   const handleOpenLightbox = useCallback((index) => {
@@ -139,6 +146,13 @@ export default function AlbumDetail() {
 
   return (
     <div className="pt-20 bg-offwhite/40 min-h-screen">
+      <SEO
+        title={`${album.title} - ${album.categoryLabel || 'Bộ Sưu Tập'}`}
+        description={album.desc || album.story || `Xem chi tiết bộ sưu tập ${album.title} tại QA Stories Studio.`}
+        image={album.cover || album.gallery?.[0]?.src}
+        type="article"
+      />
+
       {/* 1. Unified Compact Header */}
       <section className="bg-white border-b border-orange-100/70 pt-4 pb-5 sm:pb-6 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -235,7 +249,6 @@ export default function AlbumDetail() {
       {/* 2. Photo Gallery Grid */}
       <section className="py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
           {/* Masonry / Grid Gallery */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {album.gallery.map((photo, index) => (
@@ -258,6 +271,7 @@ export default function AlbumDetail() {
                     }}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"
+                    decoding="async"
                   />
                 </div>
 
@@ -284,7 +298,7 @@ export default function AlbumDetail() {
         </div>
       </section>
 
-      {/* 4. Related Albums Carousel / Grid */}
+      {/* 3. Related Albums Carousel / Grid */}
       {relatedAlbums.length > 0 && (
         <section className="py-16 bg-white border-t border-orange-100/60">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -313,6 +327,7 @@ export default function AlbumDetail() {
                       alt={rel.title}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       loading="lazy"
+                      decoding="async"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute top-4 left-4">

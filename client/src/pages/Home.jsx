@@ -6,6 +6,7 @@ import { Autoplay, Navigation, Pagination } from 'swiper/modules'
 import HeroSlider from '../components/ui/HeroSlider'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import { useSettings } from '../context/SettingsContext'
+import SEO from '../components/ui/SEO'
 import api from '../utils/api'
 
 import 'swiper/css'
@@ -70,18 +71,15 @@ const defaultFeaturedAlbums = [
 ]
 
 export default function Home() {
-  const { settings, refreshSettings } = useSettings()
+  const { settings } = useSettings()
   const [albums, setAlbums] = useState([])
 
   useEffect(() => {
-    refreshSettings?.()
-  }, [])
-
-  useEffect(() => {
+    let isMounted = true
     const fetchAlbums = async () => {
       try {
         const res = await api.get('/albums')
-        if (res.success && res.data && res.data.length > 0) {
+        if (isMounted && res.success && res.data && res.data.length > 0) {
           setAlbums(res.data)
         }
       } catch (err) {
@@ -89,6 +87,9 @@ export default function Home() {
       }
     }
     fetchAlbums()
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const displayAlbums = useMemo(() => {
@@ -139,6 +140,12 @@ export default function Home() {
 
   return (
     <div className="overflow-hidden">
+      <SEO
+        title={settings?.seo_title || 'QA Stories | Studio Chụp Ảnh Em Bé & Gia Đình Nghệ Thuật'}
+        description={settings?.seo_description}
+        image={introImage}
+      />
+
       {/* 1. Hero Banner with Integrated Quick Access */}
       <HeroSlider />
 
@@ -157,6 +164,7 @@ export default function Home() {
                       alt={`${siteName} Baby Photography`}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      decoding="async"
                     />
                   </div>
                 </div>
@@ -305,6 +313,7 @@ export default function Home() {
                         alt={album.title}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         loading="lazy"
+                        decoding="async"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
                       

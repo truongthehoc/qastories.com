@@ -3,12 +3,74 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="QA Stories - Studio nhiếp ảnh em bé chuyên nghiệp. Lưu giữ từng khoảnh khắc thiên thần của bé." />
-    <title>QA Stories | Studio Nhiếp Ảnh Em Bé</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="theme-color" content="#FF7A2F" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Primary SEO Meta Tags -->
+    <title>QA Stories | Studio Chụp Ảnh Em Bé & Gia Đình Nghệ Thuật</title>
+    <meta name="description" content="QA Stories - Studio nhiếp ảnh em bé, newborn sơ sinh, thôi nôi và gia đình chuyên nghiệp. Lưu giữ từng khoảnh khắc thiên thần của con yêu với phong cách nghệ thuật ấm áp." />
+    <meta name="keywords" content="chụp ảnh em bé, chụp ảnh newborn, chụp ảnh thôi nôi, studio chụp ảnh cho bé, QA Stories, studio nghệ thuật" />
+    <link rel="canonical" href="https://qastories.vn/" />
+
+    <!-- Open Graph / Facebook / Zalo -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://qastories.vn/" />
+    <meta property="og:site_name" content="QA Stories" />
+    <meta property="og:title" content="QA Stories | Studio Chụp Ảnh Em Bé & Gia Đình Nghệ Thuật" />
+    <meta property="og:description" content="Lưu giữ từng khoảnh khắc đầu đời thiêng liêng nhất của con yêu với phong cách nghệ thuật ấm áp tại QA Stories." />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1200&h=630&fit=crop&q=85" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="vi_VN" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="QA Stories | Studio Chụp Ảnh Em Bé & Gia Đình Nghệ Thuật" />
+    <meta name="twitter:description" content="Lưu giữ từng khoảnh khắc đầu đời thiêng liêng nhất của con yêu tại QA Stories Studio." />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1200&h=630&fit=crop&q=85" />
+
+    <!-- Fast Font Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,300..900;1,300..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Nunito:ital,wght@0,300..900;1,300..900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+
+    <!-- Optimized Google Fonts with exact weights & display=swap -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Nunito:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- JSON-LD Structured Data Schema for Local Photography Studio -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "PhotographyStudio",
+        "name": "QA Stories Studio",
+        "image": "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1200&q=85",
+        "description": "Studio chụp ảnh sơ sinh newborn, thôi nôi, 100 ngày tuổi và gia đình uy tín với phong cách nghệ thuật tinh tế.",
+        "url": "https://qastories.vn",
+        "telephone": "+84901234567",
+        "priceRange": "$$",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "123 Đường ABC, Phường 1",
+          "addressLocality": "Thủ Dầu Một",
+          "addressRegion": "Bình Dương",
+          "addressCountry": "VN"
+        },
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            "opens": "08:00",
+            "closes": "20:00"
+          }
+        ]
+      }
+    </script>
   </head>
   <body class="bg-white text-gray-900 antialiased selection:bg-primary selection:text-white">
     <div id="root"></div>

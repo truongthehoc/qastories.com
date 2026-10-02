@@ -1,15 +1,11 @@
-import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Camera, Heart, Quote, MapPin } from 'lucide-react'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import { useSettings } from '../context/SettingsContext'
+import SEO from '../components/ui/SEO'
 
 export default function About() {
-  const { settings, refreshSettings } = useSettings()
-
-  useEffect(() => {
-    refreshSettings?.()
-  }, [])
+  const { settings } = useSettings()
 
   const founderName = settings.about_founder_name !== undefined ? settings.about_founder_name : 'Min'
   const founderRole = settings.about_founder_role !== undefined ? settings.about_founder_role : ''
@@ -33,6 +29,12 @@ export default function About() {
 
   return (
     <div className="pt-20 bg-[#FFFDF9] min-h-screen overflow-hidden font-body">
+      <SEO
+        title="Giới Thiệu Về Chúng Tôi"
+        description={`Tìm hiểu về câu chuyện, phong cách nhiếp ảnh và tâm huyết của đội ngũ ${siteName} Studio.`}
+        image={founderImage}
+      />
+
       {/* Ambient Soft Glows */}
       <div className="fixed top-20 left-0 w-96 h-96 rounded-full bg-orange-100/40 blur-3xl pointer-events-none -z-10" />
       <div className="fixed bottom-10 right-0 w-[450px] h-[450px] rounded-full bg-amber-100/30 blur-3xl pointer-events-none -z-10" />
@@ -76,6 +78,8 @@ export default function About() {
                           src={founderAvatar}
                           alt={founderName}
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
                         />
                       </div>
                       <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
@@ -132,6 +136,8 @@ export default function About() {
                       src={founderImage}
                       alt={`${founderName} - ${siteName}`}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
 

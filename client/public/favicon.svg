@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF9D66" />
+      <stop offset="100%" stop-color="#FF7A2F" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#E85D10" flood-opacity="0.3" />
+    </filter>
+  </defs>
+  <!-- Background Circle -->
+  <rect width="64" height="64" rx="18" fill="url(#grad)" filter="url(#shadow)" />
+  
+  <!-- Camera Body -->
+  <path d="M20 22L23 18H41L44 22H48C50.2091 22 52 23.7909 52 26V44C52 46.2091 50.2091 48 48 48H16C13.7909 48 12 46.2091 12 44V26C12 23.7909 13.7909 22 16 22H20Z" fill="#FFFFFF" fill-opacity="0.95" />
+  
+  <!-- Lens Outer -->
+  <circle cx="32" cy="35" r="9" fill="url(#grad)" />
+  <!-- Lens Inner Sparkle / Heart -->
+  <circle cx="32" cy="35" r="5.5" fill="#FFFFFF" />
+  <circle cx="34" cy="33" r="2" fill="#FF7A2F" />
+  
+  <!-- Flash Dot -->
+  <circle cx="45" cy="26" r="1.5" fill="#FF7A2F" />
+</svg>

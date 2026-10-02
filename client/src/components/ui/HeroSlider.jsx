@@ -30,10 +30,11 @@ export default function HeroSlider() {
   const [slides, setSlides] = useState(defaultSlides)
 
   useEffect(() => {
+    let isMounted = true
     async function loadBanners() {
       try {
         const res = await api.get('/banners')
-        if (res.success && res.data && res.data.length > 0) {
+        if (isMounted && res.success && res.data && res.data.length > 0) {
           setSlides(res.data)
         }
       } catch (err) {
@@ -41,10 +42,13 @@ export default function HeroSlider() {
       }
     }
     loadBanners()
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   return (
-    <section className="relative h-screen w-full overflow-hidden bg-black flex flex-col justify-end select-none">
+    <section className="relative h-screen w-full overflow-hidden bg-neutral-900 flex flex-col justify-end select-none">
       {/* 1. Fullscreen Background Slideshow */}
       <div className="absolute inset-0 z-0">
         <Swiper
@@ -69,9 +73,11 @@ export default function HeroSlider() {
             <SwiperSlide key={slide.id || idx} className="relative h-full w-full">
               <img
                 src={slide.image_url || slide.image}
-                alt={slide.title || slide.alt || 'QA Stories'}
+                alt={slide.title || slide.alt || 'QA Stories Baby Photography'}
                 className="w-full h-full object-cover"
                 loading={idx === 0 ? 'eager' : 'lazy'}
+                fetchPriority={idx === 0 ? 'high' : 'auto'}
+                decoding="async"
               />
               {/* Top gradient for Navbar visibility */}
               <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
