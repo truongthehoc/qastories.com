@@ -57,21 +57,19 @@ export default function AdminLogin() {
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               {brandLogo ? (
-                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 flex items-center justify-center shadow-md p-1.5">
-                  <img
-                    src={brandLogo}
-                    alt={brandName}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+                <img
+                  src={brandLogo}
+                  alt={brandName}
+                  className="h-16 sm:h-20 w-auto max-w-[180px] object-contain drop-shadow-sm"
+                />
               ) : (
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-orange-400 text-white shadow-lg shadow-primary/30">
                   <Camera size={28} />
                 </div>
               )}
             </div>
-            <h1 className="font-heading font-bold text-2xl text-slate-900 tracking-tight">{brandName} Admin</h1>
-            <p className="text-slate-500 text-xs sm:text-sm mt-1">Hệ Thống Quản Trị & Điều Hành Studio</p>
+            <h1 className="font-heading font-bold text-2xl text-slate-900 tracking-tight">{brandName}</h1>
+            <p className="text-slate-500 text-xs sm:text-sm mt-1">Hệ Thống Quản Trị & Điều Hành</p>
           </div>
 
           {/* Error Alert */}
