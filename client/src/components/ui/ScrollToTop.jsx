@@ -47,11 +47,11 @@ export default function ScrollToTop() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.5, y: 20 }}
           transition={{ duration: 0.3 }}
-          className="fixed bottom-22 left-4 sm:bottom-8 sm:left-8 z-50 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-[#E5C9A1]/90 hover:bg-primary text-white border-2 border-white/80 shadow-xl shadow-amber-900/15 hover:shadow-primary/40 flex items-center justify-center backdrop-blur-md transition-all duration-300 cursor-pointer group active:scale-90"
+          className="fixed bottom-[72px] left-3 sm:bottom-8 sm:left-8 z-50 w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[#E5C9A1]/75 hover:bg-primary text-white border border-white/70 shadow-md hover:shadow-lg shadow-amber-900/10 flex items-center justify-center backdrop-blur-md opacity-75 hover:opacity-100 transition-all duration-300 cursor-pointer group active:scale-90"
         >
           <ChevronUp
-            size={24}
-            className="stroke-[3] group-hover:-translate-y-0.5 transition-transform duration-300"
+            size={18}
+            className="stroke-[3] group-hover:-translate-y-0.5 transition-transform duration-300 sm:w-[22px] sm:h-[22px]"
           />
         </motion.button>
       )}

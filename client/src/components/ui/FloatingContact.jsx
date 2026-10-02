@@ -95,7 +95,7 @@ export default function FloatingContact() {
   return (
     <div
       ref={containerRef}
-      className="fixed bottom-22 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end gap-3 select-none"
+      className="fixed bottom-[72px] right-3 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end gap-2.5 select-none"
     >
       {/* Expanded Sub-Buttons */}
       <AnimatePresence>
@@ -134,7 +134,7 @@ export default function FloatingContact() {
 
                 {/* Round Icon Button */}
                 <div
-                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full ${btn.bgClass} border-2 border-white/90 shadow-xl flex items-center justify-center transition-all duration-300 active:scale-90 group-hover:shadow-2xl`}
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${btn.bgClass} border border-white/90 shadow-lg flex items-center justify-center transition-all duration-300 active:scale-90 group-hover:shadow-2xl`}
                 >
                   {btn.icon}
                 </div>
@@ -151,13 +151,12 @@ export default function FloatingContact() {
         aria-label={isOpen ? 'Thu gọn liên hệ' : 'Mở menu liên hệ'}
         aria-expanded={isOpen}
         whileTap={{ scale: 0.9 }}
-        className="relative group w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-gradient-to-tr from-[#d4a366] via-[#E5C9A1] to-[#ff9852] text-white border-2 border-white/90 shadow-2xl shadow-amber-950/30 flex items-center justify-center backdrop-blur-md transition-all duration-300 cursor-pointer hover:shadow-orange-500/30 hover:scale-105"
+        className="relative group w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#d4a366]/85 via-[#E5C9A1]/85 to-[#ff9852]/85 text-white border border-white/80 shadow-md hover:shadow-lg shadow-amber-950/20 flex items-center justify-center backdrop-blur-md opacity-80 hover:opacity-100 transition-all duration-300 cursor-pointer hover:scale-105"
       >
         {/* Pulse glow animation when collapsed */}
         {!isOpen && (
           <>
-            <span className="absolute -inset-1 rounded-full bg-orange-400/40 animate-ping pointer-events-none opacity-75" />
-            <span className="absolute -inset-2 rounded-full bg-amber-300/20 animate-pulse pointer-events-none" />
+            <span className="absolute -inset-1 rounded-full bg-orange-400/30 animate-ping pointer-events-none opacity-60" />
           </>
         )}
 
@@ -171,7 +170,7 @@ export default function FloatingContact() {
               exit={{ rotate: 90, opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <X size={24} className="stroke-[2.5] text-white" />
+              <X size={18} className="stroke-[2.5] text-white sm:w-[22px] sm:h-[22px]" />
             </motion.div>
           ) : (
             <motion.div
@@ -182,9 +181,9 @@ export default function FloatingContact() {
               transition={{ duration: 0.2 }}
               className="relative flex items-center justify-center"
             >
-              <MessageCircle size={24} className="stroke-[2.2] text-white fill-white/20" />
+              <MessageCircle size={18} className="stroke-[2.2] text-white fill-white/20 sm:w-[22px] sm:h-[22px]" />
               <Sparkles
-                size={12}
+                size={10}
                 className="absolute -top-1 -right-1 text-yellow-100 fill-yellow-200 animate-bounce"
               />
             </motion.div>
