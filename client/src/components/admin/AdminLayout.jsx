@@ -176,36 +176,11 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        {/* User Card & Logout */}
-        <div className="p-4 border-t border-slate-800/90 bg-slate-950/50">
-          <div className="flex items-center justify-between gap-3 mb-3 px-1">
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${
-                admin?.role === 'superadmin'
-                  ? 'bg-purple-500/20 border-purple-500/40 text-purple-400'
-                  : 'bg-orange-500/15 border-orange-500/30 text-primary'
-              }`}>
-                {admin?.role === 'superadmin' ? <Crown size={15} /> : <ShieldCheck size={16} />}
-              </div>
-              <div className="truncate">
-                <div className="text-xs font-semibold text-slate-200 truncate">{admin?.full_name || 'Admin'}</div>
-                <div className="text-[10px] text-slate-400 flex items-center gap-1 truncate">
-                  <span>@{admin?.username || 'admin'}</span>
-                  <span>•</span>
-                  <span className={admin?.role === 'superadmin' ? 'text-purple-400 font-semibold' : 'text-primary'}>
-                    {roleLabel(admin?.role)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-rose-500/15 text-slate-300 hover:text-rose-400 border border-slate-700/80 hover:border-rose-500/30 shadow-xs text-xs font-medium transition-all duration-200 cursor-pointer"
-          >
-            <LogOut size={15} />
-            <span>Đăng Xuất</span>
-          </button>
+        {/* Sidebar Footer */}
+        <div className="p-3 border-t border-slate-800/90 bg-slate-950/40 text-center">
+          <p className="text-[10.5px] text-slate-500 font-medium">
+            QA Stories Studio System v1.0
+          </p>
         </div>
       </aside>
 
@@ -227,15 +202,51 @@ export default function AdminLayout() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Right Header Actions: Website Link, User Profile & Logout */}
+          <div className="flex items-center gap-2 sm:gap-3.5">
             <Link
               to="/"
               target="_blank"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-primary border border-slate-200 shadow-2xs text-xs font-medium transition-all"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-primary border border-slate-200 shadow-2xs text-xs font-medium transition-all"
             >
               <span>Xem Website</span>
               <ExternalLink size={13} />
             </Link>
+
+            <div className="hidden sm:block h-5 w-px bg-slate-200" />
+
+            {/* User Info */}
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs ${
+                admin?.role === 'superadmin'
+                  ? 'bg-purple-500/10 border-purple-500/30 text-purple-600'
+                  : 'bg-orange-500/10 border-orange-500/25 text-primary'
+              }`}>
+                {admin?.role === 'superadmin' ? <Crown size={15} /> : <ShieldCheck size={16} />}
+              </div>
+              <div className="hidden md:block text-left">
+                <div className="text-xs font-semibold text-slate-800 leading-tight">
+                  {admin?.full_name || 'Admin'}
+                </div>
+                <div className="text-[10.5px] text-slate-400 flex items-center gap-1 leading-tight mt-0.5">
+                  <span>@{admin?.username || 'admin'}</span>
+                  <span>•</span>
+                  <span className={admin?.role === 'superadmin' ? 'text-purple-600 font-semibold' : 'text-primary font-semibold'}>
+                    {roleLabel(admin?.role)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              title="Đăng xuất"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200/80 hover:border-rose-200 shadow-2xs text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95"
+            >
+              <LogOut size={14} className="stroke-[2.2]" />
+              <span className="hidden sm:inline">Đăng Xuất</span>
+            </button>
           </div>
         </header>
 
