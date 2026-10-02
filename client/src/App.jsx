@@ -32,6 +32,7 @@ import AboutManager from './pages/admin/AboutManager'
 import SettingsManager from './pages/admin/SettingsManager'
 import AnalyticsView from './pages/admin/AnalyticsView'
 import UsersManager from './pages/admin/UsersManager'
+import FooterManager from './pages/admin/FooterManager'
 
 function LoadingSpinner() {
   return (
@@ -99,6 +100,7 @@ export default function App() {
                   <Route path="albums" element={<AlbumsManager />} />
                   <Route path="about" element={<AboutManager />} />
                   <Route path="settings" element={<SettingsManager />} />
+                  <Route path="footer" element={<FooterManager />} />
                   <Route path="analytics" element={<AnalyticsView />} />
                   <Route path="users" element={<UsersManager />} />
                 </Route>
