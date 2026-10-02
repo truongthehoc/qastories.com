@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
-import { Camera, Lock, User, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react'
+import { Camera, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react'
 import { useAdminAuth } from '../../context/AdminAuthContext'
+import { useSettings } from '../../context/SettingsContext'
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('')
@@ -11,7 +12,11 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
 
   const { login, isAuthenticated } = useAdminAuth()
+  const { settings } = useSettings()
   const navigate = useNavigate()
+
+  const brandName = settings?.brand_name || 'QA Stories'
+  const brandLogo = settings?.brand_logo
 
   if (isAuthenticated) {
     return <Navigate to="/admin" replace />
@@ -50,10 +55,22 @@ export default function AdminLogin() {
         <div className="bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-10 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-orange-400 text-white shadow-lg shadow-primary/30 mb-4">
-              <Camera size={28} />
+            <div className="flex justify-center mb-4">
+              {brandLogo ? (
+                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 flex items-center justify-center shadow-md p-1.5">
+                  <img
+                    src={brandLogo}
+                    alt={brandName}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-orange-400 text-white shadow-lg shadow-primary/30">
+                  <Camera size={28} />
+                </div>
+              )}
             </div>
-            <h1 className="font-heading font-bold text-2xl text-slate-900 tracking-tight">QA Stories Admin</h1>
+            <h1 className="font-heading font-bold text-2xl text-slate-900 tracking-tight">{brandName} Admin</h1>
             <p className="text-slate-500 text-xs sm:text-sm mt-1">Hệ Thống Quản Trị & Điều Hành Studio</p>
           </div>
 
@@ -130,7 +147,7 @@ export default function AdminLogin() {
           {/* System Version Footer */}
           <div className="mt-6 pt-6 border-t border-slate-100 text-center">
             <p className="text-xs text-slate-400 font-medium">
-              QA Stories Studio System • Phiên bản v1.0.0
+              {brandName} Studio System • Phiên bản v1.0.0
             </p>
           </div>
         </div>
