@@ -21,12 +21,13 @@ async function setupDatabase() {
 
   let connection
   try {
-    // 1. Kết nối không cần DB trước
+    // 1. Kết nối MySQL
     connection = await mysql.createConnection({
       host,
       port,
       user,
       password,
+      database: dbName,
       multipleStatements: true,
     })
 
