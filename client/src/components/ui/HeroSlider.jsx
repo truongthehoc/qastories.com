@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay, EffectFade, Navigation, Pagination } from 'swiper/modules'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import QuickAccess from './QuickAccess'
 import api from '../../utils/api'
 import 'swiper/css'
 import 'swiper/css/effect-fade'
@@ -106,7 +107,12 @@ export default function HeroSlider() {
       </button>
 
       {/* 3. Bottom Controls */}
-      <div className="relative z-20 pb-20 sm:pb-24 flex flex-col items-center gap-3.5">
+      <div className="relative z-20 pb-14 sm:pb-18 flex flex-col items-center gap-4">
+        {/* Quick Access Bar fixed inside Hero on Desktop */}
+        <div className="hidden md:flex justify-center w-full px-4">
+          <QuickAccess variant="hero" />
+        </div>
+
         {/* Pagination Dots */}
         <div className="hero-pagination flex items-center justify-center gap-2" />
       </div>

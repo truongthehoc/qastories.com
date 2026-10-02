@@ -77,7 +77,7 @@ const fallbackItems = [
   { id: '3', icon: 'PhoneCall', label: 'Liên Hệ & Tư Vấn', to: '/contact', is_active: true },
 ]
 
-export default function QuickAccess() {
+export default function QuickAccess({ variant = 'floating' }) {
   const { settings } = useSettings()
   const location = useLocation()
   const [hoveredIdx, setHoveredIdx] = useState(null)
@@ -85,13 +85,17 @@ export default function QuickAccess() {
   const [isAtBottom, setIsAtBottom] = useState(false)
   const scrollTimeoutRef = useRef(null)
 
+  const isHeroMode = variant === 'hero'
+
   const isContactEnabled =
     settings?.page_contact_enabled !== '0' &&
     settings?.page_contact_enabled !== false &&
     settings?.page_contact_enabled !== 0
 
-  // Listen to scroll events: Smoothly hide while scrolling, and ALWAYS hide when reaching the bottom
+  // Scroll listener for floating mode only
   useEffect(() => {
+    if (isHeroMode) return
+
     const handleScroll = () => {
       const scrollPosition = window.scrollY + window.innerHeight
       const totalHeight = document.documentElement.scrollHeight
@@ -117,7 +121,6 @@ export default function QuickAccess() {
       }, 250)
     }
 
-    // IntersectionObserver on Footer
     const footerEl = document.querySelector('footer')
     let observer = null
     if (footerEl && window.IntersectionObserver) {
@@ -147,9 +150,9 @@ export default function QuickAccess() {
         clearTimeout(scrollTimeoutRef.current)
       }
     }
-  }, [location.pathname])
+  }, [location.pathname, isHeroMode])
 
-  // Check if disabled
+  // Check if disabled in settings
   if (settings?.quick_access_enabled === '0' || settings?.quick_access_enabled === false) {
     return null
   }
@@ -196,8 +199,104 @@ export default function QuickAccess() {
   const hoverBgColor = hexToRgba(hoverBg, hoverOpacity)
   const borderColor = hexToRgba(textColor, 0.12)
 
+  const renderContent = () => (
+    <div
+      style={{
+        backgroundColor: containerBg,
+        borderColor: borderColor,
+      }}
+      className="pointer-events-auto backdrop-blur-2xl border rounded-full p-1 sm:p-1.5 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.22),0_0_0_1px_rgba(255,255,255,0.7)_inset,0_2px_4px_rgba(0,0,0,0.03)] transition-all duration-300 max-w-full"
+    >
+      <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar">
+        {activeItems.map((item, idx) => {
+          const IconData = QUICK_ACCESS_ICONS[item.icon] || QUICK_ACCESS_ICONS.Zap
+          const IconComponent = IconData.icon
+          const isExternal =
+            item.to?.startsWith('http') ||
+            item.to?.startsWith('tel:') ||
+            item.to?.startsWith('mailto:')
+          const isHovered = hoveredIdx === idx
+          const currentItemBg = isHovered ? hoverBgColor : 'transparent'
+          const currentItemTextColor = isHovered ? hoverTextColor : textColor
+          const currentItemIconColor = isHovered ? hoverIconColor : iconColor
+          const currentItemIconBg = isHovered
+            ? hexToRgba(hoverIconColor, 0.18)
+            : iconBg
+
+          const itemContent = (
+            <>
+              {/* Soft Round Icon Holder */}
+              <div
+                style={{
+                  backgroundColor: currentItemIconBg,
+                  color: currentItemIconColor,
+                }}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 ease-out shadow-xs shrink-0 group-hover:scale-110"
+              >
+                <IconComponent size={15} className="sm:w-[17px] sm:h-[17px]" />
+              </div>
+
+              {/* Title Text */}
+              <div className="min-w-0 pr-1">
+                <h3
+                  style={{ color: currentItemTextColor }}
+                  className="font-heading text-xs sm:text-[13px] font-semibold transition-colors duration-300 tracking-normal whitespace-nowrap"
+                >
+                  {item.label}
+                </h3>
+              </div>
+            </>
+          )
+
+          const commonClasses =
+            'relative group flex items-center justify-center gap-2 sm:gap-2.5 px-3.5 sm:px-4.5 py-1.5 sm:py-2 rounded-full transition-all duration-300 cursor-pointer select-none active:scale-95'
+
+          if (isExternal) {
+            return (
+              <a
+                key={item.id || idx}
+                href={item.to}
+                target={item.to?.startsWith('http') ? '_blank' : undefined}
+                rel={item.to?.startsWith('http') ? 'noopener noreferrer' : undefined}
+                onMouseEnter={() => setHoveredIdx(idx)}
+                onMouseLeave={() => setHoveredIdx(null)}
+                style={{ backgroundColor: currentItemBg }}
+                className={commonClasses}
+              >
+                {itemContent}
+              </a>
+            )
+          }
+
+          return (
+            <Link
+              key={item.id || idx}
+              to={item.to || '/'}
+              onMouseEnter={() => setHoveredIdx(idx)}
+              onMouseLeave={() => setHoveredIdx(null)}
+              style={{ backgroundColor: currentItemBg }}
+              className={commonClasses}
+            >
+              {itemContent}
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+
+  // 1. Hero Mode for PC / Desktop inside Hero Section
+  if (isHeroMode) {
+    return (
+      <div className="select-none inline-flex justify-center">
+        {renderContent()}
+      </div>
+    )
+  }
+
+  // 2. Floating Mode for Mobile (or general floating bar)
   return (
-    <div className="fixed bottom-5 sm:bottom-7 inset-x-0 z-40 flex justify-center pointer-events-none px-3.5 sm:px-6">
+    <div className="md:hidden fixed bottom-5 sm:bottom-7 inset-x-0 z-40 flex justify-center pointer-events-none px-3.5 sm:px-6">
       <AnimatePresence>
         {isVisible && !isAtBottom && (
           <motion.div
@@ -205,87 +304,8 @@ export default function QuickAccess() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 22, scale: 0.92 }}
             transition={{ type: 'spring', damping: 26, stiffness: 280, mass: 0.8 }}
-            style={{
-              backgroundColor: containerBg,
-              borderColor: borderColor,
-            }}
-            className="pointer-events-auto backdrop-blur-2xl border rounded-full p-1 sm:p-1.5 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.18),0_0_0_1px_rgba(255,255,255,0.7)_inset,0_2px_4px_rgba(0,0,0,0.03)] transition-all duration-300 max-w-full"
           >
-            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar">
-              {activeItems.map((item, idx) => {
-                const IconData = QUICK_ACCESS_ICONS[item.icon] || QUICK_ACCESS_ICONS.Zap
-                const IconComponent = IconData.icon
-                const isExternal =
-                  item.to?.startsWith('http') ||
-                  item.to?.startsWith('tel:') ||
-                  item.to?.startsWith('mailto:')
-                const isHovered = hoveredIdx === idx
-                const currentItemBg = isHovered ? hoverBgColor : 'transparent'
-                const currentItemTextColor = isHovered ? hoverTextColor : textColor
-                const currentItemIconColor = isHovered ? hoverIconColor : iconColor
-                const currentItemIconBg = isHovered
-                  ? hexToRgba(hoverIconColor, 0.18)
-                  : iconBg
-
-                const itemContent = (
-                  <>
-                    {/* Soft Round Icon Holder */}
-                    <div
-                      style={{
-                        backgroundColor: currentItemIconBg,
-                        color: currentItemIconColor,
-                      }}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 ease-out shadow-xs shrink-0 group-hover:scale-110"
-                    >
-                      <IconComponent size={15} className="sm:w-[17px] sm:h-[17px]" />
-                    </div>
-
-                    {/* Title Text */}
-                    <div className="min-w-0 pr-1">
-                      <h3
-                        style={{ color: currentItemTextColor }}
-                        className="font-heading text-xs sm:text-[13px] font-semibold transition-colors duration-300 tracking-normal whitespace-nowrap"
-                      >
-                        {item.label}
-                      </h3>
-                    </div>
-                  </>
-                )
-
-                const commonClasses =
-                  'relative group flex items-center justify-center gap-2 sm:gap-2.5 px-3.5 sm:px-4.5 py-1.5 sm:py-2 rounded-full transition-all duration-300 cursor-pointer select-none active:scale-95'
-
-                if (isExternal) {
-                  return (
-                    <a
-                      key={item.id || idx}
-                      href={item.to}
-                      target={item.to?.startsWith('http') ? '_blank' : undefined}
-                      rel={item.to?.startsWith('http') ? 'noopener noreferrer' : undefined}
-                      onMouseEnter={() => setHoveredIdx(idx)}
-                      onMouseLeave={() => setHoveredIdx(null)}
-                      style={{ backgroundColor: currentItemBg }}
-                      className={commonClasses}
-                    >
-                      {itemContent}
-                    </a>
-                  )
-                }
-
-                return (
-                  <Link
-                    key={item.id || idx}
-                    to={item.to || '/'}
-                    onMouseEnter={() => setHoveredIdx(idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                    style={{ backgroundColor: currentItemBg }}
-                    className={commonClasses}
-                  >
-                    {itemContent}
-                  </Link>
-                )
-              })}
-            </div>
+            {renderContent()}
           </motion.div>
         )}
       </AnimatePresence>
