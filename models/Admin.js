@@ -6,14 +6,14 @@ export class Admin {
   static async findByUsername(username) {
     const [rows] = await pool.execute('SELECT * FROM admins WHERE username = ?', [username])
     if (!rows[0]) return null
-    return this.formatUser(rows[0])
+    return this.formatUser(rows[0], true)
   }
 
   // Tìm theo ID (an toàn không trả password_hash)
   static async findById(id) {
     const [rows] = await pool.execute('SELECT * FROM admins WHERE id = ?', [id])
     if (!rows[0]) return null
-    return this.formatUser(rows[0])
+    return this.formatUser(rows[0], false)
   }
 
   // Lấy toàn bộ danh sách tài khoản
@@ -99,7 +99,7 @@ export class Admin {
   }
 
   // Helper format user object & parse permissions JSON
-  static formatUser(user) {
+  static formatUser(user, includePassword = false) {
     if (!user) return null
     let parsedPermissions = []
     if (user.permissions) {
@@ -134,6 +134,7 @@ export class Admin {
       status: user.status || 'active',
       permissions: parsedPermissions,
       ...safeUser,
+      ...(includePassword && { password_hash: user.password_hash }),
     }
   }
 }
