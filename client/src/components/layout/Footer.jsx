@@ -2,45 +2,81 @@ import { Link } from 'react-router-dom'
 import { Camera, Phone, Mail, MapPin, Heart } from 'lucide-react'
 import { useSettings } from '../../context/SettingsContext'
 
-// Các biểu tượng Mạng Xã Hội chuẩn nhận diện thương hiệu
-function FacebookIcon({ size = 18, className = '' }) {
+// Các biểu tượng Mạng Xã Hội chuẩn chuyên nghiệp chính hãng (Official Brand Badges)
+function FacebookBrandIcon({ size = 32, className = '' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" className={className}>
+      <rect width="36" height="36" rx="10" fill="#1877F2" />
+      <path
+        d="M25.5 19l.7-4.8h-4.6v-3.1c0-1.3.6-2.6 2.7-2.6h2.1V4.4s-1.9-.3-3.7-.3c-3.8 0-6.3 2.3-6.3 6.5V14.2h-4.2V19h4.2v11.7c.9.1 1.7.2 2.6.2s1.7-.1 2.6-.2V19h3.9z"
+        fill="#FFFFFF"
+      />
     </svg>
   )
 }
 
-function InstagramIcon({ size = 18, className = '' }) {
+function InstagramBrandIcon({ size = 32, className = '' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" className={className}>
+      <defs>
+        <radialGradient id="ig-gradient-footer" cx="20%" cy="110%" r="120%">
+          <stop offset="0%" stopColor="#ffd521" />
+          <stop offset="10%" stopColor="#ffd521" />
+          <stop offset="45%" stopColor="#f50000" />
+          <stop offset="90%" stopColor="#b900b4" />
+        </radialGradient>
+      </defs>
+      <rect width="36" height="36" rx="10" fill="url(#ig-gradient-footer)" />
+      <rect x="8.5" y="8.5" width="19" height="19" rx="5.5" stroke="#ffffff" strokeWidth="2.2" fill="none" />
+      <circle cx="18" cy="18" r="4.8" stroke="#ffffff" strokeWidth="2.2" fill="none" />
+      <circle cx="23.2" cy="12.8" r="1.2" fill="#ffffff" />
     </svg>
   )
 }
 
-function ZaloIcon({ className = '' }) {
+function ZaloBrandIcon({ size = 32, className = '' }) {
   return (
-    <span className={`font-black text-[11px] tracking-tight leading-none uppercase ${className}`}>
-      Zalo
-    </span>
-  )
-}
-
-function YoutubeIcon({ size = 18, className = '' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" className={className}>
+      <rect width="36" height="36" rx="10" fill="#0068FF" />
+      <path
+        d="M9.5 21.8l4.4-5.6H9.8v-1.9h6.8v1.6l-4.5 5.7h4.9v2H9.5v-1.8zM19 23.6h-2.1V14.3h2.1v9.3zm6.4 0h-2v-1.2c-.4.8-1.3 1.4-2.4 1.4-1.9 0-3.3-1.6-3.3-3.7s1.4-3.7 3.3-3.7c1.1 0 2 .6 2.4 1.4v-3.9h2v9.7zm-3.6-1.8c1.2 0 1.9-.9 1.9-2s-.7-2-1.9-2-1.9.9-1.9 2 .7 2 1.9 2z"
+        fill="#FFFFFF"
+      />
     </svg>
   )
 }
 
-function TikTokIcon({ size = 17, className = '' }) {
+function YoutubeBrandIcon({ size = 32, className = '' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 3 15.68 6.34 6.34 0 0 0 9.34 22a6.34 6.34 0 0 0 6.34-6.32V8.71a8.31 8.31 0 0 0 4.91 1.62v-3.64z" />
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" className={className}>
+      <rect width="36" height="36" rx="10" fill="#FF0000" />
+      <path
+        d="M26.8 13.8c-.2-.8-.8-1.4-1.6-1.6-1.4-.4-7.2-.4-7.2-.4s-5.8 0-7.2.4c-.8.2-1.4.8-1.6 1.6-.4 1.4-.4 4.2-.4 4.2s0 2.8.4 4.2c.2.8.8 1.4 1.6 1.6 1.4.4 7.2.4 7.2.4s5.8 0 7.2-.4c.8-.2 1.4-.8 1.6-1.6.4-1.4.4-4.2.4-4.2s0-2.8-.4-4.2z"
+        fill="#FFFFFF"
+      />
+      <path d="M16 20.5l5.5-2.5L16 15.5v5z" fill="#FF0000" />
+    </svg>
+  )
+}
+
+function TikTokBrandIcon({ size = 32, className = '' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" className={className}>
+      <rect width="36" height="36" rx="10" fill="#000000" stroke="#333333" strokeWidth="1" />
+      <g transform="translate(6.5, 6.5) scale(0.64)">
+        <path
+          d="M24.8 8.6a6.1 6.1 0 01-4.8-5.4V2h-4.4v17.4a3.7 3.7 0 01-6.6 2.2 3.7 3.7 0 012.9-5.9c.4 0 .8.1 1.1.2V11.8a8.7 8.7 0 00-1.3-.1A8 8 0 003.7 20a8 8 0 0011.9 6.9 7.8 7.8 0 004-6.9v-11a10.6 10.6 0 006.3 2.1V6.5a6.4 6.4 0 01-1.1.1z"
+          fill="#FE2C55"
+        />
+        <path
+          d="M23.8 7.6a6.1 6.1 0 01-4.8-5.4V1h-4.4v17.4a3.7 3.7 0 01-6.6 2.2 3.7 3.7 0 012.9-5.9c.4 0 .8.1 1.1.2V10.8a8.7 8.7 0 00-1.3-.1A8 8 0 002.7 19a8 8 0 0011.9 6.9 7.8 7.8 0 004-6.9v-11a10.6 10.6 0 006.3 2.1V5.5a6.4 6.4 0 01-1.1.1z"
+          fill="#25F4EE"
+        />
+        <path
+          d="M24.3 8.1a6.1 6.1 0 01-4.8-5.4V1.5h-4.4v17.4a3.7 3.7 0 01-6.6 2.2 3.7 3.7 0 012.9-5.9c.4 0 .8.1 1.1.2V11.3a8.7 8.7 0 00-1.3-.1A8 8 0 003.2 19.5a8 8 0 0011.9 6.9 7.8 7.8 0 004-6.9v-11a10.6 10.6 0 006.3 2.1V6a6.4 6.4 0 01-1.1.1z"
+          fill="#FFFFFF"
+        />
+      </g>
     </svg>
   )
 }
@@ -97,34 +133,29 @@ export default function Footer() {
   // Danh sách mạng xã hội: Chỉ hiển thị các nút có URL hợp lệ cấu hình từ Tab Mạng Xã Hội trong Cài Đặt
   const socialList = [
     {
-      icon: FacebookIcon,
+      icon: FacebookBrandIcon,
       href: settings?.brand_facebook,
       label: 'Facebook',
-      hoverClass: 'hover:bg-[#1877F2] hover:border-[#1877F2] hover:text-white',
     },
     {
-      icon: InstagramIcon,
+      icon: InstagramBrandIcon,
       href: settings?.brand_instagram,
       label: 'Instagram',
-      hoverClass: 'hover:bg-[#E4405F] hover:border-[#E4405F] hover:text-white',
     },
     {
-      icon: ZaloIcon,
+      icon: ZaloBrandIcon,
       href: settings?.brand_zalo,
       label: 'Zalo',
-      hoverClass: 'hover:bg-[#0068FF] hover:border-[#0068FF] hover:text-white',
     },
     {
-      icon: YoutubeIcon,
+      icon: YoutubeBrandIcon,
       href: settings?.brand_youtube,
       label: 'YouTube',
-      hoverClass: 'hover:bg-[#FF0000] hover:border-[#FF0000] hover:text-white',
     },
     {
-      icon: TikTokIcon,
+      icon: TikTokBrandIcon,
       href: settings?.brand_tiktok,
       label: 'TikTok',
-      hoverClass: 'hover:bg-[#010101] hover:border-[#00f2fe] hover:text-white',
     },
   ].filter((s) => {
     if (!s.href) return false
@@ -166,8 +197,8 @@ export default function Footer() {
               </p>
 
               {socialEnabled && socialList.length > 0 && (
-                <div className="flex items-center gap-2.5 sm:gap-3">
-                  {socialList.map(({ icon: Icon, href, label, hoverClass }) => (
+                <div className="flex items-center gap-2.5 sm:gap-3 pt-1">
+                  {socialList.map(({ icon: Icon, href, label }) => (
                     <a
                       key={label}
                       href={href}
@@ -175,9 +206,9 @@ export default function Footer() {
                       rel="noreferrer"
                       title={label}
                       aria-label={label}
-                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-300 transition-all duration-300 group ${hoverClass}`}
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110 hover:-translate-y-0.5 shadow-md shadow-black/40 group overflow-hidden"
                     >
-                      <Icon size={17} className="group-hover:scale-110 transition-transform duration-200" />
+                      <Icon size={38} className="w-full h-full object-contain" />
                     </a>
                   ))}
                 </div>
