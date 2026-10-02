@@ -97,6 +97,26 @@ async function setupDatabase() {
       // Ignore
     }
 
+    // Đảm bảo nâng cấp cột cho bảng admins nếu thiếu
+    try {
+      const [adminCols] = await connection.query(`SHOW COLUMNS FROM admins`)
+      const colNames = adminCols.map(c => c.Field)
+      if (!colNames.includes('phone')) {
+        await connection.query(`ALTER TABLE admins ADD COLUMN phone VARCHAR(50) NULL AFTER email`)
+      }
+      if (!colNames.includes('permissions')) {
+        await connection.query(`ALTER TABLE admins ADD COLUMN permissions JSON NULL AFTER role`)
+      }
+      if (!colNames.includes('status')) {
+        await connection.query(`ALTER TABLE admins ADD COLUMN status ENUM('active', 'inactive') DEFAULT 'active' AFTER permissions`)
+      }
+      if (!colNames.includes('avatar')) {
+        await connection.query(`ALTER TABLE admins ADD COLUMN avatar VARCHAR(500) NULL AFTER status`)
+      }
+    } catch (e) {
+      // Ignore
+    }
+
     // 4. Seed Admin mặc định
     const [existingAdmins] = await connection.query('SELECT id FROM admins WHERE username = ?', ['admin'])
     if (existingAdmins.length === 0) {

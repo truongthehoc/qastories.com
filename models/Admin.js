@@ -11,19 +11,14 @@ export class Admin {
 
   // Tìm theo ID (an toàn không trả password_hash)
   static async findById(id) {
-    const [rows] = await pool.execute(
-      'SELECT id, username, full_name, email, phone, role, permissions, status, avatar, created_at, last_login FROM admins WHERE id = ?',
-      [id]
-    )
+    const [rows] = await pool.execute('SELECT * FROM admins WHERE id = ?', [id])
     if (!rows[0]) return null
     return this.formatUser(rows[0])
   }
 
   // Lấy toàn bộ danh sách tài khoản
   static async getAll() {
-    const [rows] = await pool.query(
-      'SELECT id, username, full_name, email, phone, role, permissions, status, avatar, created_at, last_login FROM admins ORDER BY id ASC'
-    )
+    const [rows] = await pool.query('SELECT * FROM admins ORDER BY id ASC')
     return rows.map((u) => this.formatUser(u))
   }
 
@@ -132,9 +127,13 @@ export class Admin {
       ]
     }
 
+    const { password_hash, ...safeUser } = user
     return {
-      ...user,
+      full_name: user.full_name || 'Admin',
+      role: user.role || 'admin',
+      status: user.status || 'active',
       permissions: parsedPermissions,
+      ...safeUser,
     }
   }
 }
