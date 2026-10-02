@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "QA Stories - Studio Portfolio & Booking System (Full-Stack Monolith)",
   "main": "server.js",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "type": "module",
   "scripts": {
     "start": "node server.js",
