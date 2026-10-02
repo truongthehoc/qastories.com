@@ -12,7 +12,11 @@ CREATE TABLE IF NOT EXISTS `admins` (
   `password_hash` VARCHAR(255) NOT NULL,
   `full_name` VARCHAR(255) NOT NULL DEFAULT 'Admin',
   `email` VARCHAR(255) NULL,
+  `phone` VARCHAR(50) NULL,
   `role` VARCHAR(50) DEFAULT 'admin',
+  `permissions` JSON NULL,
+  `status` ENUM('active', 'inactive') DEFAULT 'active',
+  `avatar` VARCHAR(500) NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `last_login` TIMESTAMP NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
