@@ -26,7 +26,6 @@ import {
   UserCheck,
   Zap,
 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useSettings } from '../../context/SettingsContext'
 
 export const QUICK_ACCESS_ICONS = {
@@ -308,18 +307,11 @@ export default function QuickAccess({ variant = 'floating' }) {
   // 2. Floating Mode for Mobile (or general floating bar)
   return (
     <div className="md:hidden fixed bottom-5 sm:bottom-7 inset-x-0 z-40 flex justify-center pointer-events-none px-3.5 sm:px-6">
-      <AnimatePresence>
-        {isVisible && !isAtBottom && (
-          <motion.div
-            initial={{ opacity: 0, y: 28, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 22, scale: 0.92 }}
-            transition={{ type: 'spring', damping: 26, stiffness: 280, mass: 0.8 }}
-          >
-            {renderContent()}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isVisible && !isAtBottom && (
+        <div className="animate-fade-in transition-transform duration-300">
+          {renderContent()}
+        </div>
+      )}
     </div>
   )
 }

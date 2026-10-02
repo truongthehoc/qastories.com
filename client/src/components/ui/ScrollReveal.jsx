@@ -1,28 +1,36 @@
-import { motion } from 'framer-motion'
 import { useIntersectionObserver } from '../../hooks/useIntersectionObserver'
 
 export function ScrollReveal({ children, delay = 0, direction = 'up', className = '' }) {
   const [ref, isVisible] = useIntersectionObserver({ threshold: 0.1 })
 
-  const variants = {
-    hidden: {
-      opacity: 0,
-      y: direction === 'up' ? 40 : direction === 'down' ? -40 : 0,
-      x: direction === 'left' ? 40 : direction === 'right' ? -40 : 0,
-    },
-    visible: { opacity: 1, y: 0, x: 0 },
+  const getTransform = () => {
+    if (isVisible) return 'none'
+    switch (direction) {
+      case 'up':
+        return 'translate3d(0, 24px, 0)'
+      case 'down':
+        return 'translate3d(0, -24px, 0)'
+      case 'left':
+        return 'translate3d(24px, 0, 0)'
+      case 'right':
+        return 'translate3d(-24px, 0, 0)'
+      default:
+        return 'none'
+    }
   }
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      variants={variants}
-      initial="hidden"
-      animate={isVisible ? 'visible' : 'hidden'}
-      transition={{ duration: 0.6, delay, ease: 'easeOut' }}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: getTransform(),
+        transition: `opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
+        willChange: isVisible ? 'auto' : 'opacity, transform',
+      }}
       className={className}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }

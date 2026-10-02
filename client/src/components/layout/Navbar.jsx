@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X, Camera, Phone } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { useSettings } from '../../context/SettingsContext'
 
 const navLinks = [
@@ -145,10 +144,7 @@ export default function Navbar() {
                   >
                     {link.label}
                     {active && (
-                      <motion.div
-                        layoutId="navUnderline"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"
-                      />
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full transition-all duration-300" />
                     )}
                   </Link>
                 )

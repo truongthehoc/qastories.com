@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { Phone, MessageCircle, X, Sparkles } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useSettings } from '../../context/SettingsContext'
 
 export default function FloatingContact() {
@@ -98,97 +97,61 @@ export default function FloatingContact() {
       className="fixed bottom-[72px] right-3 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end gap-2.5 select-none"
     >
       {/* Expanded Sub-Buttons */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 12, scale: 0.85 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.85 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="flex flex-col items-end gap-2.5 mb-1"
-          >
-            {contactButtons.map((btn, index) => (
-              <motion.a
-                key={btn.id}
-                href={btn.href}
-                target={btn.href.startsWith('http') ? '_blank' : '_self'}
-                rel="noopener noreferrer"
-                onClick={() => setIsOpen(false)}
-                aria-label={btn.label}
-                initial={{ opacity: 0, x: 20, scale: 0.7 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: 20, scale: 0.7 }}
-                transition={{
-                  duration: 0.25,
-                  delay: (contactButtons.length - 1 - index) * 0.05,
-                  ease: 'easeOut',
-                }}
-                className="group flex items-center gap-2.5 cursor-pointer"
+      {isOpen && (
+        <div className="flex flex-col items-end gap-2.5 mb-1 animate-fade-in">
+          {contactButtons.map((btn) => (
+            <a
+              key={btn.id}
+              href={btn.href}
+              target={btn.href.startsWith('http') ? '_blank' : '_self'}
+              rel="noopener noreferrer"
+              onClick={() => setIsOpen(false)}
+              aria-label={btn.label}
+              className="group flex items-center gap-2.5 cursor-pointer transition-transform duration-200 active:scale-95"
+            >
+              {/* Text Label Pill */}
+              <span
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md border shadow-lg transition-all duration-300 group-hover:scale-105 ${btn.badgeBg}`}
               >
-                {/* Text Label Pill */}
-                <span
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md border shadow-lg transition-all duration-300 group-hover:scale-105 ${btn.badgeBg}`}
-                >
-                  {btn.label}
-                </span>
+                {btn.label}
+              </span>
 
-                {/* Round Icon Button */}
-                <div
-                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${btn.bgClass} border border-white/90 shadow-lg flex items-center justify-center transition-all duration-300 active:scale-90 group-hover:shadow-2xl`}
-                >
-                  {btn.icon}
-                </div>
-              </motion.a>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {/* Round Icon Button */}
+              <div
+                className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${btn.bgClass} border border-white/90 shadow-lg flex items-center justify-center transition-all duration-300 active:scale-90 group-hover:shadow-2xl`}
+              >
+                {btn.icon}
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
 
       {/* Main Collapsible Trigger Button */}
-      <motion.button
+      <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label={isOpen ? 'Thu gọn liên hệ' : 'Mở menu liên hệ'}
         aria-expanded={isOpen}
-        whileTap={{ scale: 0.9 }}
-        className="relative group w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#d4a366]/85 via-[#E5C9A1]/85 to-[#ff9852]/85 text-white border border-white/80 shadow-md hover:shadow-lg shadow-amber-950/20 flex items-center justify-center backdrop-blur-md opacity-80 hover:opacity-100 transition-all duration-300 cursor-pointer hover:scale-105"
+        className="relative group w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#d4a366]/85 via-[#E5C9A1]/85 to-[#ff9852]/85 text-white border border-white/80 shadow-md hover:shadow-lg shadow-amber-950/20 flex items-center justify-center backdrop-blur-md opacity-80 hover:opacity-100 transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95"
       >
         {/* Pulse glow animation when collapsed */}
         {!isOpen && (
-          <>
-            <span className="absolute -inset-1 rounded-full bg-orange-400/30 animate-ping pointer-events-none opacity-60" />
-          </>
+          <span className="absolute -inset-1 rounded-full bg-orange-400/30 animate-ping pointer-events-none opacity-60" />
         )}
 
         {/* Animated Icon Transition */}
-        <AnimatePresence mode="wait" initial={false}>
-          {isOpen ? (
-            <motion.div
-              key="close"
-              initial={{ rotate: -90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: 90, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <X size={18} className="stroke-[2.5] text-white sm:w-[22px] sm:h-[22px]" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="chat"
-              initial={{ rotate: 90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: -90, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="relative flex items-center justify-center"
-            >
-              <MessageCircle size={18} className="stroke-[2.2] text-white fill-white/20 sm:w-[22px] sm:h-[22px]" />
-              <Sparkles
-                size={10}
-                className="absolute -top-1 -right-1 text-yellow-100 fill-yellow-200 animate-bounce"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {isOpen ? (
+          <X size={18} className="stroke-[2.5] text-white sm:w-[22px] sm:h-[22px] animate-fade-in" />
+        ) : (
+          <div className="relative flex items-center justify-center animate-fade-in">
+            <MessageCircle size={18} className="stroke-[2.2] text-white fill-white/20 sm:w-[22px] sm:h-[22px]" />
+            <Sparkles
+              size={10}
+              className="absolute -top-1 -right-1 text-yellow-100 fill-yellow-200 animate-bounce"
+            />
+          </div>
+        )}
 
         {/* Tooltip on Desktop hover when collapsed */}
         {!isOpen && (
@@ -197,7 +160,7 @@ export default function FloatingContact() {
             <span className="absolute top-1/2 -right-1 -translate-y-1/2 border-4 border-transparent border-l-gray-900/90" />
           </span>
         )}
-      </motion.button>
+      </button>
     </div>
   )
 }

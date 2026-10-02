@@ -98,6 +98,8 @@ export default function HeroSlider() {
                   loading={idx === 0 ? 'eager' : 'lazy'}
                   fetchPriority={idx === 0 ? 'high' : 'low'}
                   decoding="async"
+                  width="1080"
+                  height="1440"
                 />
                 {/* Top gradient for Navbar visibility */}
                 <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />

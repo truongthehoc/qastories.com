@@ -191,6 +191,10 @@ export default function Footer() {
                     src={settings.brand_logo}
                     alt={brandName}
                     className="h-9 sm:h-10 w-auto max-w-[140px] object-contain group-hover:scale-105 transition-transform duration-300"
+                    width="140"
+                    height="40"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform duration-300">
