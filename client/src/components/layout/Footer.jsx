@@ -3,67 +3,76 @@ import { Camera, Phone, Mail, MapPin, Heart } from 'lucide-react'
 import { useSettings } from '../../context/SettingsContext'
 
 // Các biểu tượng Mạng Xã Hội chuẩn chuyên nghiệp chính hãng (Official Brand Badges)
-function FacebookBrandIcon({ size = 32, className = '' }) {
+function FacebookBrandIcon({ size = 36, className = '' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" className={className}>
-      <rect width="36" height="36" rx="10" fill="#1877F2" />
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" className={className}>
+      <rect width="40" height="40" rx="10" fill="#1877F2" />
       <path
-        d="M25.5 19l.7-4.8h-4.6v-3.1c0-1.3.6-2.6 2.7-2.6h2.1V4.4s-1.9-.3-3.7-.3c-3.8 0-6.3 2.3-6.3 6.5V14.2h-4.2V19h4.2v11.7c.9.1 1.7.2 2.6.2s1.7-.1 2.6-.2V19h3.9z"
+        d="M27 21.2l.8-5.3h-5.1v-3.4c0-1.4.7-2.9 3-2.9h2.3V5.1s-2.1-.4-4.1-.4c-4.2 0-7 2.6-7 7.2v3.9H12v5.3h4.9V34c1 .2 2 .2 3 .2s2-.1 3-.2V21.2H27z"
         fill="#FFFFFF"
       />
     </svg>
   )
 }
 
-function InstagramBrandIcon({ size = 32, className = '' }) {
+function InstagramBrandIcon({ size = 36, className = '' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" className={className}>
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" className={className}>
       <defs>
-        <radialGradient id="ig-gradient-footer" cx="20%" cy="110%" r="120%">
+        <radialGradient id="ig-grad-footer" cx="20%" cy="110%" r="120%">
           <stop offset="0%" stopColor="#ffd521" />
           <stop offset="10%" stopColor="#ffd521" />
           <stop offset="45%" stopColor="#f50000" />
           <stop offset="90%" stopColor="#b900b4" />
         </radialGradient>
       </defs>
-      <rect width="36" height="36" rx="10" fill="url(#ig-gradient-footer)" />
-      <rect x="8.5" y="8.5" width="19" height="19" rx="5.5" stroke="#ffffff" strokeWidth="2.2" fill="none" />
-      <circle cx="18" cy="18" r="4.8" stroke="#ffffff" strokeWidth="2.2" fill="none" />
-      <circle cx="23.2" cy="12.8" r="1.2" fill="#ffffff" />
+      <rect width="40" height="40" rx="10" fill="url(#ig-grad-footer)" />
+      <rect x="9" y="9" width="22" height="22" rx="6" stroke="#ffffff" strokeWidth="2.5" fill="none" />
+      <circle cx="20" cy="20" r="5.5" stroke="#ffffff" strokeWidth="2.5" fill="none" />
+      <circle cx="25.5" cy="14.5" r="1.5" fill="#ffffff" />
     </svg>
   )
 }
 
-function ZaloBrandIcon({ size = 32, className = '' }) {
+function ZaloBrandIcon({ size = 36, className = '' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" className={className}>
-      <rect width="36" height="36" rx="10" fill="#0068FF" />
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" className={className}>
+      <rect width="40" height="40" rx="10" fill="#0068FF" />
+      <text
+        x="50%"
+        y="53%"
+        dominantBaseline="central"
+        textAnchor="middle"
+        fill="#FFFFFF"
+        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        fontWeight="800"
+        fontSize="13.5"
+        letterSpacing="-0.3px"
+      >
+        Zalo
+      </text>
+    </svg>
+  )
+}
+
+function YoutubeBrandIcon({ size = 36, className = '' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" className={className}>
+      <rect width="40" height="40" rx="10" fill="#FF0000" />
       <path
-        d="M9.5 21.8l4.4-5.6H9.8v-1.9h6.8v1.6l-4.5 5.7h4.9v2H9.5v-1.8zM19 23.6h-2.1V14.3h2.1v9.3zm6.4 0h-2v-1.2c-.4.8-1.3 1.4-2.4 1.4-1.9 0-3.3-1.6-3.3-3.7s1.4-3.7 3.3-3.7c1.1 0 2 .6 2.4 1.4v-3.9h2v9.7zm-3.6-1.8c1.2 0 1.9-.9 1.9-2s-.7-2-1.9-2-1.9.9-1.9 2 .7 2 1.9 2z"
+        d="M30 15.2c-.2-.9-.9-1.6-1.8-1.8-1.6-.4-8.2-.4-8.2-.4s-6.6 0-8.2.4c-.9.2-1.6.9-1.8 1.8-.4 1.6-.4 4.8-.4 4.8s0 3.2.4 4.8c.2.9.9 1.6 1.8 1.8 1.6.4 8.2.4 8.2.4s6.6 0 8.2-.4c.9-.2 1.6-.9 1.8-1.8.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8z"
         fill="#FFFFFF"
       />
+      <path d="M18 23.2l5.8-3.2L18 16.8v6.4z" fill="#FF0000" />
     </svg>
   )
 }
 
-function YoutubeBrandIcon({ size = 32, className = '' }) {
+function TikTokBrandIcon({ size = 36, className = '' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" className={className}>
-      <rect width="36" height="36" rx="10" fill="#FF0000" />
-      <path
-        d="M26.8 13.8c-.2-.8-.8-1.4-1.6-1.6-1.4-.4-7.2-.4-7.2-.4s-5.8 0-7.2.4c-.8.2-1.4.8-1.6 1.6-.4 1.4-.4 4.2-.4 4.2s0 2.8.4 4.2c.2.8.8 1.4 1.6 1.6 1.4.4 7.2.4 7.2.4s5.8 0 7.2-.4c.8-.2 1.4-.8 1.6-1.6.4-1.4.4-4.2.4-4.2s0-2.8-.4-4.2z"
-        fill="#FFFFFF"
-      />
-      <path d="M16 20.5l5.5-2.5L16 15.5v5z" fill="#FF0000" />
-    </svg>
-  )
-}
-
-function TikTokBrandIcon({ size = 32, className = '' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" className={className}>
-      <rect width="36" height="36" rx="10" fill="#000000" stroke="#333333" strokeWidth="1" />
-      <g transform="translate(6.5, 6.5) scale(0.64)">
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" className={className}>
+      <rect width="40" height="40" rx="10" fill="#000000" stroke="#333333" strokeWidth="1" />
+      <g transform="translate(8, 8) scale(0.68)">
         <path
           d="M24.8 8.6a6.1 6.1 0 01-4.8-5.4V2h-4.4v17.4a3.7 3.7 0 01-6.6 2.2 3.7 3.7 0 012.9-5.9c.4 0 .8.1 1.1.2V11.8a8.7 8.7 0 00-1.3-.1A8 8 0 003.7 20a8 8 0 0011.9 6.9 7.8 7.8 0 004-6.9v-11a10.6 10.6 0 006.3 2.1V6.5a6.4 6.4 0 01-1.1.1z"
           fill="#FE2C55"
