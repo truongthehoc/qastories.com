@@ -199,15 +199,19 @@ export default function QuickAccess({ variant = 'floating' }) {
   const hoverBgColor = hexToRgba(hoverBg, hoverOpacity)
   const borderColor = hexToRgba(textColor, 0.12)
 
+  const isCompactGrid = activeItems.length > 3
+
   const renderContent = () => (
     <div
       style={{
         backgroundColor: containerBg,
         borderColor: borderColor,
       }}
-      className="pointer-events-auto backdrop-blur-2xl border rounded-full p-1 sm:p-1.5 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.22),0_0_0_1px_rgba(255,255,255,0.7)_inset,0_2px_4px_rgba(0,0,0,0.03)] transition-all duration-300 max-w-full"
+      className={`pointer-events-auto backdrop-blur-2xl border ${
+        isCompactGrid ? 'rounded-2xl sm:rounded-full p-1.5 sm:p-1.5' : 'rounded-full p-1 sm:p-1.5'
+      } shadow-[0_16px_36px_-6px_rgba(0,0,0,0.22),0_0_0_1px_rgba(255,255,255,0.7)_inset,0_2px_4px_rgba(0,0,0,0.03)] transition-all duration-300 max-w-[calc(100vw-24px)] sm:max-w-fit`}
     >
-      <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar">
+      <div className={`flex items-center ${isCompactGrid ? 'gap-1 sm:gap-1.5 justify-center' : 'gap-1 sm:gap-1.5'} overflow-x-auto no-scrollbar scroll-smooth`}>
         {activeItems.map((item, idx) => {
           const IconData = QUICK_ACCESS_ICONS[item.icon] || QUICK_ACCESS_ICONS.Zap
           const IconComponent = IconData.icon
@@ -231,16 +235,22 @@ export default function QuickAccess({ variant = 'floating' }) {
                   backgroundColor: currentItemIconBg,
                   color: currentItemIconColor,
                 }}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 ease-out shadow-xs shrink-0 group-hover:scale-110"
+                className={`${
+                  isCompactGrid ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-7 h-7 sm:w-8 sm:h-8'
+                } rounded-full flex items-center justify-center transition-all duration-300 ease-out shadow-xs shrink-0 group-hover:scale-110`}
               >
-                <IconComponent size={15} className="sm:w-[17px] sm:h-[17px]" />
+                <IconComponent size={isCompactGrid ? 14 : 15} className="sm:w-[17px] sm:h-[17px]" />
               </div>
 
               {/* Title Text */}
-              <div className="min-w-0 pr-1">
+              <div className={`${isCompactGrid ? 'w-full min-w-0 text-center sm:text-left sm:w-auto sm:pr-1' : 'min-w-0 pr-1'}`}>
                 <h3
                   style={{ color: currentItemTextColor }}
-                  className="font-heading text-xs sm:text-[13px] font-semibold transition-colors duration-300 tracking-normal whitespace-nowrap"
+                  className={`font-heading ${
+                    isCompactGrid
+                      ? 'text-[10px] sm:text-xs font-semibold leading-tight line-clamp-1 truncate max-w-[62px] sm:max-w-none'
+                      : 'text-xs sm:text-[13px] font-semibold tracking-normal whitespace-nowrap'
+                  } transition-colors duration-300`}
                 >
                   {item.label}
                 </h3>
@@ -248,8 +258,9 @@ export default function QuickAccess({ variant = 'floating' }) {
             </>
           )
 
-          const commonClasses =
-            'relative group flex items-center justify-center gap-2 sm:gap-2.5 px-3.5 sm:px-4.5 py-1.5 sm:py-2 rounded-full transition-all duration-300 cursor-pointer select-none active:scale-95'
+          const commonClasses = isCompactGrid
+            ? 'relative group flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3.5 py-1 sm:py-2 rounded-xl sm:rounded-full transition-all duration-300 cursor-pointer select-none active:scale-95 shrink-0'
+            : 'relative group flex items-center justify-center gap-2 sm:gap-2.5 px-3.5 sm:px-4.5 py-1.5 sm:py-2 rounded-full transition-all duration-300 cursor-pointer select-none active:scale-95 shrink-0'
 
           if (isExternal) {
             return (
