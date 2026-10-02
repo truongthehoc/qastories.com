@@ -1,17 +1,45 @@
 import { Link } from 'react-router-dom'
-import { Camera, Phone, Mail, MapPin, Facebook, Instagram, Youtube, Heart, MessageCircle } from 'lucide-react'
+import { Camera, Phone, Mail, MapPin, Heart } from 'lucide-react'
 import { useSettings } from '../../context/SettingsContext'
 
-// Biểu tượng TikTok SVG
-function TikTokIcon({ size = 16, className = '' }) {
+// Các biểu tượng Mạng Xã Hội chuẩn nhận diện thương hiệu
+function FacebookIcon({ size = 18, className = '' }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={className}
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+    </svg>
+  )
+}
+
+function InstagramIcon({ size = 18, className = '' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  )
+}
+
+function ZaloIcon({ className = '' }) {
+  return (
+    <span className={`font-black text-[11px] tracking-tight leading-none uppercase ${className}`}>
+      Zalo
+    </span>
+  )
+}
+
+function YoutubeIcon({ size = 18, className = '' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    </svg>
+  )
+}
+
+function TikTokIcon({ size = 17, className = '' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
       <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 3 15.68 6.34 6.34 0 0 0 9.34 22a6.34 6.34 0 0 0 6.34-6.32V8.71a8.31 8.31 0 0 0 4.91 1.62v-3.64z" />
     </svg>
   )
@@ -68,11 +96,36 @@ export default function Footer() {
 
   // Danh sách mạng xã hội: Chỉ hiển thị các nút có URL hợp lệ cấu hình từ Tab Mạng Xã Hội trong Cài Đặt
   const socialList = [
-    { icon: Facebook, href: settings?.brand_facebook, label: 'Facebook' },
-    { icon: Instagram, href: settings?.brand_instagram, label: 'Instagram' },
-    { icon: MessageCircle, href: settings?.brand_zalo, label: 'Zalo' },
-    { icon: Youtube, href: settings?.brand_youtube, label: 'YouTube' },
-    { icon: TikTokIcon, href: settings?.brand_tiktok, label: 'TikTok' },
+    {
+      icon: FacebookIcon,
+      href: settings?.brand_facebook,
+      label: 'Facebook',
+      hoverClass: 'hover:bg-[#1877F2] hover:border-[#1877F2] hover:text-white',
+    },
+    {
+      icon: InstagramIcon,
+      href: settings?.brand_instagram,
+      label: 'Instagram',
+      hoverClass: 'hover:bg-[#E4405F] hover:border-[#E4405F] hover:text-white',
+    },
+    {
+      icon: ZaloIcon,
+      href: settings?.brand_zalo,
+      label: 'Zalo',
+      hoverClass: 'hover:bg-[#0068FF] hover:border-[#0068FF] hover:text-white',
+    },
+    {
+      icon: YoutubeIcon,
+      href: settings?.brand_youtube,
+      label: 'YouTube',
+      hoverClass: 'hover:bg-[#FF0000] hover:border-[#FF0000] hover:text-white',
+    },
+    {
+      icon: TikTokIcon,
+      href: settings?.brand_tiktok,
+      label: 'TikTok',
+      hoverClass: 'hover:bg-[#010101] hover:border-[#00f2fe] hover:text-white',
+    },
   ].filter((s) => {
     if (!s.href) return false
     const trimmed = String(s.href).trim()
@@ -114,16 +167,17 @@ export default function Footer() {
 
               {socialEnabled && socialList.length > 0 && (
                 <div className="flex items-center gap-2.5 sm:gap-3">
-                  {socialList.map(({ icon: Icon, href, label }) => (
+                  {socialList.map(({ icon: Icon, href, label, hoverClass }) => (
                     <a
                       key={label}
                       href={href}
                       target="_blank"
                       rel="noreferrer"
+                      title={label}
                       aria-label={label}
-                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all duration-300 group"
+                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-300 transition-all duration-300 group ${hoverClass}`}
                     >
-                      <Icon size={17} className="text-gray-300 group-hover:text-white" />
+                      <Icon size={17} className="group-hover:scale-110 transition-transform duration-200" />
                     </a>
                   ))}
                 </div>
