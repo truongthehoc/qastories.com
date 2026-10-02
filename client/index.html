@@ -31,17 +31,39 @@
     <meta name="twitter:description" content="Lưu giữ từng khoảnh khắc đầu đời thiêng liêng nhất của con yêu tại QA Stories Studio." />
     <meta name="twitter:image" content="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1200&h=630&fit=crop&q=85" />
 
-    <!-- Fast Font Preconnects -->
+    <!-- Fast Font & Image Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <link rel="preconnect" href="https://images.unsplash.com" />
 
-    <!-- Optimized Google Fonts with exact weights & display=swap -->
+    <!-- Preload Hero LCP Image for Mobile -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Nunito:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="image"
+      href="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=75&auto=format"
+      imagesrcset="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=640&q=75&auto=format 640w, https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=75&auto=format 1080w"
+      imagesizes="100vw"
+      fetchpriority="high"
     />
+
+    <!-- Non-blocking Google Fonts with display=swap -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      />
+    </noscript>
 
     <!-- JSON-LD Structured Data Schema for Local Photography Studio -->
     <script type="application/ld+json">

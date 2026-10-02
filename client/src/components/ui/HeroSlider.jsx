@@ -9,20 +9,29 @@ import 'swiper/css/effect-fade'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 
+function getOptimizedSrc(url, width = 1080) {
+  if (!url) return ''
+  if (url.includes('images.unsplash.com')) {
+    const cleanUrl = url.split('?')[0]
+    return `${cleanUrl}?w=${width}&q=75&auto=format`
+  }
+  return url
+}
+
 const defaultSlides = [
   {
     id: 1,
-    image_url: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1920&q=85',
+    image_url: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=75&auto=format',
     title: 'QA Stories Newborn Photography 1',
   },
   {
     id: 2,
-    image_url: 'https://images.unsplash.com/photo-1546015720-b8b30df5aa27?w=1920&q=85',
+    image_url: 'https://images.unsplash.com/photo-1546015720-b8b30df5aa27?w=1080&q=75&auto=format',
     title: 'QA Stories Baby Photography 2',
   },
   {
     id: 3,
-    image_url: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=1920&q=85',
+    image_url: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=1080&q=75&auto=format',
     title: 'QA Stories Family Photography 3',
   },
 ]
@@ -70,22 +79,33 @@ export default function HeroSlider() {
           loop
           className="h-full w-full hero-swiper"
         >
-          {slides.map((slide, idx) => (
-            <SwiperSlide key={slide.id || idx} className="relative h-full w-full">
-              <img
-                src={slide.image_url || slide.image}
-                alt={slide.title || slide.alt || 'QA Stories Baby Photography'}
-                className="w-full h-full object-cover"
-                loading={idx === 0 ? 'eager' : 'lazy'}
-                fetchPriority={idx === 0 ? 'high' : 'auto'}
-                decoding="async"
-              />
-              {/* Top gradient for Navbar visibility */}
-              <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
-              {/* Soft bottom gradient */}
-              <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-            </SwiperSlide>
-          ))}
+          {slides.map((slide, idx) => {
+            const rawUrl = slide.image_url || slide.image
+            const isUnsplash = rawUrl?.includes('images.unsplash.com')
+
+            return (
+              <SwiperSlide key={slide.id || idx} className="relative h-full w-full">
+                <img
+                  src={getOptimizedSrc(rawUrl, 1080)}
+                  srcSet={
+                    isUnsplash
+                      ? `${getOptimizedSrc(rawUrl, 640)} 640w, ${getOptimizedSrc(rawUrl, 1080)} 1080w, ${getOptimizedSrc(rawUrl, 1600)} 1600w`
+                      : undefined
+                  }
+                  sizes="100vw"
+                  alt={slide.title || slide.alt || 'QA Stories Baby Photography'}
+                  className="w-full h-full object-cover"
+                  loading={idx === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={idx === 0 ? 'high' : 'low'}
+                  decoding="async"
+                />
+                {/* Top gradient for Navbar visibility */}
+                <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
+                {/* Soft bottom gradient */}
+                <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+              </SwiperSlide>
+            )
+          })}
         </Swiper>
       </div>
 

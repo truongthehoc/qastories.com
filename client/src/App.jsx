@@ -20,19 +20,19 @@ const AlbumDetail = lazy(() => import('./pages/AlbumDetail'))
 const About = lazy(() => import('./pages/About'))
 const Contact = lazy(() => import('./pages/Contact'))
 
-// Admin Pages (Directly imported for instant 0ms tab switching)
-import AdminLogin from './pages/admin/AdminLogin'
-import Dashboard from './pages/admin/Dashboard'
-import BookingsManager from './pages/admin/BookingsManager'
-import BannersManager from './pages/admin/BannersManager'
-import QuickAccessManager from './pages/admin/QuickAccessManager'
-import AlbumsManager from './pages/admin/AlbumsManager'
-import PackagesManager from './pages/admin/PackagesManager'
-import AboutManager from './pages/admin/AboutManager'
-import SettingsManager from './pages/admin/SettingsManager'
-import AnalyticsView from './pages/admin/AnalyticsView'
-import UsersManager from './pages/admin/UsersManager'
-import FooterManager from './pages/admin/FooterManager'
+// Admin Pages (Lazy loaded for optimal mobile performance and minimal initial bundle size)
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'))
+const BookingsManager = lazy(() => import('./pages/admin/BookingsManager'))
+const BannersManager = lazy(() => import('./pages/admin/BannersManager'))
+const QuickAccessManager = lazy(() => import('./pages/admin/QuickAccessManager'))
+const AlbumsManager = lazy(() => import('./pages/admin/AlbumsManager'))
+const PackagesManager = lazy(() => import('./pages/admin/PackagesManager'))
+const AboutManager = lazy(() => import('./pages/admin/AboutManager'))
+const SettingsManager = lazy(() => import('./pages/admin/SettingsManager'))
+const AnalyticsView = lazy(() => import('./pages/admin/AnalyticsView'))
+const UsersManager = lazy(() => import('./pages/admin/UsersManager'))
+const FooterManager = lazy(() => import('./pages/admin/FooterManager'))
 
 function LoadingSpinner() {
   return (
