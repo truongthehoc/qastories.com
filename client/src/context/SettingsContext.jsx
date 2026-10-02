@@ -56,14 +56,46 @@ const defaultSettings = {
 const SettingsContext = createContext(null)
 
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState(defaultSettings)
-  const [loading, setLoading] = useState(true)
+  const [settings, setSettings] = useState(() => {
+    try {
+      const cached = localStorage.getItem('qastories_cached_settings')
+      if (cached) {
+        return { ...defaultSettings, ...JSON.parse(cached) }
+      }
+    } catch {
+      // Ignore
+    }
+    return defaultSettings
+  })
+  const [loading, setLoading] = useState(false)
+
+  // Tự động cập nhật Favicon trình duyệt theo Logo
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const faviconUrl = settings?.brand_logo || '/favicon.svg'
+      let link = document.querySelector("link[rel~='icon']")
+      if (!link) {
+        link = document.createElement('link')
+        link.rel = 'icon'
+        document.getElementsByTagName('head')[0].appendChild(link)
+      }
+      link.href = faviconUrl
+    }
+  }, [settings?.brand_logo])
 
   const fetchSettings = async () => {
     try {
       const res = await api.get('/settings')
       if (res.success && res.data) {
-        setSettings((prev) => ({ ...prev, ...res.data }))
+        setSettings((prev) => {
+          const updated = { ...prev, ...res.data }
+          try {
+            localStorage.setItem('qastories_cached_settings', JSON.stringify(updated))
+          } catch {
+            // Ignore
+          }
+          return updated
+        })
       }
     } catch (error) {
       console.warn('Sử dụng cấu hình mặc định (API settings không khả dụng):', error.message)
