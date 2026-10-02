@@ -127,16 +127,11 @@ export default function AdminLogin() {
             </button>
           </form>
 
-          {/* Quick Demo Fill Helper */}
+          {/* System Version Footer */}
           <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-            <button
-              type="button"
-              onClick={handleFillDemo}
-              className="text-xs text-slate-500 hover:text-primary transition-colors flex items-center justify-center gap-1.5 mx-auto"
-            >
-              <ShieldCheck size={14} className="text-primary" />
-              <span>Điền tài khoản Admin mẫu (admin / admin@123)</span>
-            </button>
+            <p className="text-xs text-slate-400 font-medium">
+              QA Stories Studio System • Phiên bản v1.0.0
+            </p>
           </div>
         </div>
       </div>

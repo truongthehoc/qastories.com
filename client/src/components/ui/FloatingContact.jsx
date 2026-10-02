@@ -95,7 +95,7 @@ export default function FloatingContact() {
   return (
     <div
       ref={containerRef}
-      className="fixed bottom-6 right-5 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end gap-3 select-none"
+      className="fixed bottom-22 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end gap-3 select-none"
     >
       {/* Expanded Sub-Buttons */}
       <AnimatePresence>
