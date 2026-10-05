@@ -7,16 +7,17 @@ import SEO from '../components/ui/SEO'
 export default function About() {
   const { settings } = useSettings()
 
-  const founderName = settings.about_founder_name !== undefined ? settings.about_founder_name : 'Min'
+  const founderName = settings.about_founder_name !== undefined && settings.about_founder_name !== '' ? settings.about_founder_name : (settings.brand_name || 'QA Stories')
   const founderRole = settings.about_founder_role !== undefined ? settings.about_founder_role : ''
+  const founderQuote = settings.about_founder_quote !== undefined ? settings.about_founder_quote : 'Từng bức ảnh là một tình yêu'
   const founderImage = settings.about_image || 'https://images.unsplash.com/photo-1554080353-a576cf803bda?w=800&q=80'
   const founderAvatar = settings.about_founder_avatar || founderImage
   const siteName = settings.brand_name || settings.site_name || 'QA Stories'
   const studioAddress = settings.brand_address || settings.address || 'Bình Dương'
   const headerLabel = settings.about_header_label || 'Lời Ngỏ Từ Trái Tim'
   const storyTitle = settings.about_story_title || 'Nhiếp ảnh là cách mình lưu giữ linh hồn của khoảnh khắc.'
-  const storyP1 = settings.about_story_p1 || `Chào bạn, mình là ${founderName} — một người say mê nhiếp ảnh và cái đẹp từ những điều dung dị nhất. Mình chuyên về ảnh em bé, chân dung ngoài trời (ngoại cảnh) tại ${studioAddress}.`
-  const storyP2 = settings.about_story_p2 || 'Đối với mình, mỗi buổi chụp không đơn thuần là một buổi làm việc, mà là cuộc gặp gỡ, trò chuyện và cùng tạo nên những kỷ niệm đẹp qua từng bức ảnh.'
+  const storyP1 = (settings.about_story_p1 || '').trim()
+  const storyP2 = (settings.about_story_p2 || '').trim()
   const quoteText = settings.about_quote_text || 'Mỗi em bé là một thiên thần nhỏ, mỗi nụ cười là một câu chuyện vô giá được lưu giữ trọn vẹn qua thời gian.'
   const quoteAuthor = settings.about_quote_author || siteName
   const quoteColor = settings.about_quote_color || '#1f2937'
@@ -58,16 +59,20 @@ export default function About() {
                 </h1>
 
                 {/* Paragraphs with soft styling */}
-                <div className="space-y-4 text-gray-600 font-body text-base sm:text-lg leading-relaxed">
-                  <p className="whitespace-pre-line">
-                    {storyP1}
-                  </p>
-                  {storyP2 && (
-                    <p className="border-l-2 border-primary/40 pl-4 italic text-gray-700 font-body text-base sm:text-lg whitespace-pre-line">
-                      {storyP2}
-                    </p>
-                  )}
-                </div>
+                {(storyP1 || storyP2) && (
+                  <div className="space-y-4 text-gray-600 font-body text-base sm:text-lg leading-relaxed">
+                    {storyP1 && (
+                      <p className="whitespace-pre-line">
+                        {storyP1}
+                      </p>
+                    )}
+                    {storyP2 && (
+                      <p className="border-l-2 border-primary/40 pl-4 italic text-gray-700 font-body text-base sm:text-lg whitespace-pre-line">
+                        {storyP2}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Artistic Founder Signature Card */}
                 <div className="mt-8 p-4 sm:p-5 rounded-3xl bg-white/80 backdrop-blur-md border border-orange-200/70 shadow-lg shadow-orange-950/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -93,16 +98,20 @@ export default function About() {
                       <h4 className="font-heading font-bold text-gray-900 text-lg leading-snug">
                         {founderName}
                       </h4>
-                      <p className="font-body text-xs text-primary font-semibold tracking-wide">
-                        {founderRole}
-                      </p>
+                      {founderRole && (
+                        <p className="font-body text-xs text-primary font-semibold tracking-wide">
+                          {founderRole}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-400 font-medium italic border-t sm:border-t-0 sm:border-l border-orange-100 pt-2 sm:pt-0 sm:pl-4">
-                    <Quote size={13} className="text-primary-light shrink-0" />
-                    <span>Từng bức ảnh là một tình yêu</span>
-                  </div>
+                  {founderQuote && (
+                    <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-400 font-medium italic border-t sm:border-t-0 sm:border-l border-orange-100 pt-2 sm:pt-0 sm:pl-4">
+                      <Quote size={13} className="text-primary-light shrink-0" />
+                      <span>{founderQuote}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Action CTAs */}

@@ -29,6 +29,7 @@ export default function AboutManager() {
     about_image: '',
     about_founder_name: '',
     about_founder_role: '',
+    about_founder_quote: '',
     about_founder_avatar: '',
     about_quote_text: '',
     about_quote_author: '',
@@ -189,105 +190,162 @@ export default function AboutManager() {
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">Đoạn Văn 1 (Giới thiệu bản thân & địa điểm)</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-slate-700 font-semibold">
+                    Đoạn Văn 1 (Giới thiệu bản thân & địa điểm)
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-normal">Không bắt buộc</span>
+                </div>
                 <textarea
                   rows={4}
-                  value={form.about_story_p1}
+                  value={form.about_story_p1 ?? ''}
                   onChange={(e) => setForm({ ...form, about_story_p1: e.target.value })}
-                  placeholder="Nhập nội dung giới thiệu bản thân, phong cách chụp và địa điểm studio..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary leading-relaxed"
+                  placeholder="Nhập nội dung giới thiệu bản thân, phong cách chụp và địa điểm studio (để trống nếu không muốn hiển thị)..."
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary leading-relaxed text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">Đoạn Văn 2 (Tâm huyết & thông điệp)</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-slate-700 font-semibold">
+                    Đoạn Văn 2 (Tâm huyết & thông điệp)
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-normal">Không bắt buộc</span>
+                </div>
                 <textarea
                   rows={3}
-                  value={form.about_story_p2}
+                  value={form.about_story_p2 ?? ''}
                   onChange={(e) => setForm({ ...form, about_story_p2: e.target.value })}
-                  placeholder="Nhập tâm huyết làm nghề, sự tận tâm và cam kết chất lượng của studio..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary leading-relaxed"
+                  placeholder="Nhập tâm huyết làm nghề, sự tận tâm và cam kết chất lượng (để trống nếu không muốn hiển thị)..."
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary leading-relaxed text-xs"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1.5">Tên Người Chụp (Founder)</label>
-                  <input
-                    type="text"
-                    value={form.about_founder_name ?? ''}
-                    onChange={(e) => setForm({ ...form, about_founder_name: e.target.value })}
-                    placeholder="Nhập tên người chụp..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1.5">Chức Danh</label>
-                  <input
-                    type="text"
-                    value={form.about_founder_role ?? ''}
-                    onChange={(e) => setForm({ ...form, about_founder_role: e.target.value })}
-                    placeholder="Nhập chức danh..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-
-              {/* Avatar Upload for Founder */}
-              <div className="p-4 rounded-2xl bg-orange-50/50 border border-orange-200/80 space-y-3">
+              {/* Founder / Author Card Info */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="block text-slate-800 font-bold">Ảnh Đại Diện (Avatar Tròn của Founder)</label>
-                  <span className="text-[11px] text-primary font-medium">Hiển thị ở thẻ Founder</span>
+                  <span className="text-slate-800 font-bold text-xs">Cấu Hình Card Tác Giả / Founder</span>
+                  <span className="text-[11px] text-primary font-medium">Hiển thị thẻ chữ ký tác giả</span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4">
-                  {/* Round Avatar Preview */}
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-primary bg-white shadow-xs shrink-0">
-                    {form.about_founder_avatar || form.about_image ? (
-                      <img
-                        src={form.about_founder_avatar || form.about_image}
-                        alt="Avatar Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">
-                        No Avatar
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Input & Upload Button */}
-                  <div className="flex-1 w-full space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1 text-xs">Tên Người Chụp (Founder)</label>
                     <input
                       type="text"
-                      placeholder="Nhập đường dẫn avatar hoặc bấm nút tải ảnh..."
-                      value={form.about_founder_avatar || ''}
-                      onChange={(e) => setForm({ ...form, about_founder_avatar: e.target.value })}
-                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-primary"
+                      value={form.about_founder_name ?? ''}
+                      onChange={(e) => setForm({ ...form, about_founder_name: e.target.value })}
+                      placeholder="Nhập tên người chụp..."
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary text-xs"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1 text-xs">Chức Danh</label>
+                    <input
+                      type="text"
+                      value={form.about_founder_role ?? ''}
+                      onChange={(e) => setForm({ ...form, about_founder_role: e.target.value })}
+                      placeholder="VD: Founder & Photographer..."
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1 text-xs">Thông Điệp Trong Card</label>
+                    <input
+                      type="text"
+                      value={form.about_founder_quote ?? ''}
+                      onChange={(e) => setForm({ ...form, about_founder_quote: e.target.value })}
+                      placeholder="VD: Từng bức ảnh là một tình yêu"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary text-xs"
+                    />
+                  </div>
+                </div>
 
-                    <div className="flex items-center gap-2">
-                      <label className="py-1.5 px-3 bg-white hover:bg-orange-100/60 text-primary border border-orange-200 rounded-xl cursor-pointer flex items-center gap-1.5 transition-colors font-semibold text-xs shadow-2xs">
-                        <Upload size={13} />
-                        <span>{avatarUploading ? 'Đang tải avatar...' : 'Tải Avatar Mới'}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          disabled={avatarUploading}
-                          className="hidden"
+                {/* Avatar Upload for Founder */}
+                <div className="p-3.5 rounded-xl bg-white border border-orange-200/70 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-slate-800 font-bold text-xs">Ảnh Đại Diện (Avatar Tròn của Founder)</label>
+                    <span className="text-[10px] text-slate-400">Nếu trống sẽ dùng ảnh chân dung</span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    {/* Round Avatar Preview */}
+                    <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-primary bg-orange-50 shadow-xs shrink-0">
+                      {form.about_founder_avatar || form.about_image ? (
+                        <img
+                          src={form.about_founder_avatar || form.about_image}
+                          alt="Avatar Preview"
+                          className="w-full h-full object-cover"
                         />
-                      </label>
-                      {form.about_founder_avatar && (
-                        <button
-                          type="button"
-                          onClick={() => setForm({ ...form, about_founder_avatar: '' })}
-                          className="text-[11px] text-slate-400 hover:text-rose-600 underline cursor-pointer"
-                        >
-                          Xóa avatar riêng
-                        </button>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">
+                          No Avatar
+                        </div>
                       )}
                     </div>
+
+                    {/* Input & Upload Button */}
+                    <div className="flex-1 w-full space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Nhập đường dẫn avatar hoặc bấm nút tải ảnh..."
+                        value={form.about_founder_avatar || ''}
+                        onChange={(e) => setForm({ ...form, about_founder_avatar: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary"
+                      />
+
+                      <div className="flex items-center gap-2">
+                        <label className="py-1.5 px-3 bg-white hover:bg-orange-100/60 text-primary border border-orange-200 rounded-xl cursor-pointer flex items-center gap-1.5 transition-colors font-semibold text-xs shadow-2xs">
+                          <Upload size={13} />
+                          <span>{avatarUploading ? 'Đang tải avatar...' : 'Tải Avatar Mới'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarUpload}
+                            disabled={avatarUploading}
+                            className="hidden"
+                          />
+                        </label>
+                        {form.about_founder_avatar && (
+                          <button
+                            type="button"
+                            onClick={() => setForm({ ...form, about_founder_avatar: '' })}
+                            className="text-[11px] text-slate-400 hover:text-rose-600 underline cursor-pointer"
+                          >
+                            Xóa avatar riêng
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Live Preview */}
+                <div className="pt-1">
+                  <span className="text-[11px] text-slate-500 font-semibold block mb-1.5">Xem trước hiển thị Card Tác Giả:</span>
+                  <div className="p-3.5 rounded-2xl bg-white border border-orange-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-primary/30 ring-offset-1 bg-orange-100 shrink-0">
+                        {form.about_founder_avatar || form.about_image ? (
+                          <img src={form.about_founder_avatar || form.about_image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">Avatar</div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-heading font-bold text-gray-900 text-sm">{form.about_founder_name || 'Tên Tác Giả'}</div>
+                        <div className="text-[11px] text-primary font-semibold">{form.about_founder_role || 'Chức Danh'}</div>
+                      </div>
+                    </div>
+
+                    {form.about_founder_quote ? (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium italic border-t sm:border-t-0 sm:border-l border-orange-100 pt-2 sm:pt-0 sm:pl-3">
+                        <Quote size={12} className="text-primary-light shrink-0" />
+                        <span>{form.about_founder_quote}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-slate-400 italic">(Không hiển thị trích dẫn card tác giả)</span>
+                    )}
                   </div>
                 </div>
               </div>
