@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Phone, MessageCircle, X, Sparkles } from 'lucide-react'
 import { useSettings } from '../../context/SettingsContext'
+import { formatZaloUrl, formatExternalUrl, cleanPhoneNumber } from '../../utils/urlHelper'
 
 export default function FloatingContact() {
   const { settings } = useSettings()
@@ -35,12 +36,14 @@ export default function FloatingContact() {
   }, [isOpen])
 
   const phone = settings?.brand_phone || '0901 234 567'
-  const rawPhone = phone.replace(/\s+/g, '')
-  const zaloUrl = settings?.brand_zalo || `https://zalo.me/${rawPhone}`
+  const rawPhone = cleanPhoneNumber(phone) || '0901234567'
+  const zaloUrl = formatZaloUrl(settings?.brand_zalo, rawPhone)
   const messengerUrl = settings?.brand_facebook
-    ? settings.brand_facebook.includes('m.me')
-      ? settings.brand_facebook
-      : 'https://m.me/qastories'
+    ? formatExternalUrl(
+        settings.brand_facebook.includes('m.me')
+          ? settings.brand_facebook
+          : 'https://m.me/qastories'
+      )
     : 'https://m.me/qastories'
 
   const contactButtons = [

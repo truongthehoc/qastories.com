@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, Mail, MapPin, Clock, CheckCircle2, Facebook, Instagram, Send, Calendar, X } from 'lucide-react'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import { useSettings } from '../context/SettingsContext'
+import { formatExternalUrl, cleanPhoneNumber } from '../utils/urlHelper'
 import SEO from '../components/ui/SEO'
 import api from '../utils/api'
 
@@ -102,8 +103,8 @@ export default function Contact() {
   const brandPhone = settings?.brand_phone || '0901 234 567'
   const brandEmail = settings?.brand_email || 'hello@qastories.vn'
   const brandAddress = settings?.brand_address || '123 Đường ABC, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh'
-  const brandFacebook = settings?.brand_facebook || '#'
-  const brandInstagram = settings?.brand_instagram || '#'
+  const brandFacebook = formatExternalUrl(settings?.brand_facebook) || '#'
+  const brandInstagram = formatExternalUrl(settings?.brand_instagram) || '#'
 
   return (
     <div className="pt-20">

@@ -596,14 +596,19 @@ export default function SettingsManager() {
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">Zalo Chat Link (zalo.me/...)</label>
+                <label className="block text-slate-700 font-semibold mb-1.5">
+                  Zalo Chat (Số điện thoại hoặc link zalo.me)
+                </label>
                 <input
                   type="text"
                   value={form.brand_zalo || ''}
                   onChange={(e) => setForm({ ...form, brand_zalo: e.target.value })}
-                  placeholder="Nhập đường dẫn liên hệ Zalo..."
+                  placeholder="VD: 0901234567 hoặc https://zalo.me/0901234567"
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary"
                 />
+                <p className="text-xs text-slate-400 mt-1">
+                  Có thể nhập số điện thoại (vd: <code>0901234567</code>) hoặc đường dẫn (vd: <code>https://zalo.me/0901234567</code>).
+                </p>
               </div>
 
               <div>

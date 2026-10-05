@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Camera, Phone, Mail, MapPin, Heart } from 'lucide-react'
 import { useSettings } from '../../context/SettingsContext'
+import { formatExternalUrl, formatZaloUrl } from '../../utils/urlHelper'
 
 // Các biểu tượng Mạng Xã Hội chuẩn chuyên nghiệp chính hãng (Official Brand Badges)
 function FacebookBrandIcon({ size = 36, className = '' }) {
@@ -140,33 +141,35 @@ export default function Footer() {
   const activeNavItems = navItems.filter((item) => item.is_active !== false)
 
   // Danh sách mạng xã hội: Chỉ hiển thị các nút có URL hợp lệ cấu hình từ Tab Mạng Xã Hội trong Cài Đặt
-  const socialList = [
+  const rawSocial = [
     {
       icon: FacebookBrandIcon,
-      href: settings?.brand_facebook,
+      href: formatExternalUrl(settings?.brand_facebook),
       label: 'Facebook',
     },
     {
       icon: InstagramBrandIcon,
-      href: settings?.brand_instagram,
+      href: formatExternalUrl(settings?.brand_instagram),
       label: 'Instagram',
     },
     {
       icon: ZaloBrandIcon,
-      href: settings?.brand_zalo,
+      href: formatZaloUrl(settings?.brand_zalo, brandPhone),
       label: 'Zalo',
     },
     {
       icon: YoutubeBrandIcon,
-      href: settings?.brand_youtube,
+      href: formatExternalUrl(settings?.brand_youtube),
       label: 'YouTube',
     },
     {
       icon: TikTokBrandIcon,
-      href: settings?.brand_tiktok,
+      href: formatExternalUrl(settings?.brand_tiktok),
       label: 'TikTok',
     },
-  ].filter((s) => {
+  ]
+
+  const socialList = rawSocial.filter((s) => {
     if (!s.href) return false
     const trimmed = String(s.href).trim()
     return trimmed !== '' && trimmed !== '#'

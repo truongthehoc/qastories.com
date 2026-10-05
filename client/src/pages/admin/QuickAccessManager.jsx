@@ -45,6 +45,7 @@ import {
 } from 'lucide-react'
 import { useSettings } from '../../context/SettingsContext'
 import { QUICK_ACCESS_ICONS, hexToRgba } from '../../components/ui/QuickAccess'
+import { formatZaloUrl, formatExternalUrl, cleanPhoneNumber } from '../../utils/urlHelper'
 import api from '../../utils/api'
 
 const DEFAULT_ITEMS = [
@@ -407,8 +408,11 @@ export default function QuickAccessManager() {
   }, [iconSearch])
 
   // System Destinations (Pages, Categories, Specific Albums, Home Sections, Contact Actions)
-  const phone = settings?.contact_phone || '0901234567'
-  const zalo = settings?.contact_zalo || phone
+  const phone = settings?.brand_phone || settings?.contact_phone || '0901234567'
+  const rawPhone = cleanPhoneNumber(phone) || '0901234567'
+  const zaloUrl = formatZaloUrl(settings?.brand_zalo || settings?.contact_zalo, rawPhone)
+  const facebookUrl = formatExternalUrl(settings?.brand_facebook || settings?.social_facebook)
+  const mapsUrl = formatExternalUrl(settings?.brand_maps_url || settings?.google_maps_url)
 
   const systemDestinations = useMemo(() => {
     return [
@@ -456,18 +460,18 @@ export default function QuickAccessManager() {
       {
         group: '📞 Liên Hệ & Hành Động Trực Tiếp',
         options: [
-          { label: `Gọi Hotline Trực Tiếp (tel:${phone})`, url: `tel:${phone}`, icon: 'PhoneCall', defaultLabel: 'Gọi Hotline' },
-          { label: `Nhắn Tin Zalo Tư Vấn (https://zalo.me/${zalo})`, url: `https://zalo.me/${zalo}`, icon: 'MessageCircle', defaultLabel: 'Chat Zalo' },
-          ...(settings?.social_facebook
-            ? [{ label: 'Facebook Fanpage Studio', url: settings.social_facebook, icon: 'Share2', defaultLabel: 'Facebook Fanpage' }]
+          { label: `Gọi Hotline Trực Tiếp (tel:${rawPhone})`, url: `tel:${rawPhone}`, icon: 'PhoneCall', defaultLabel: 'Gọi Hotline' },
+          { label: `Nhắn Tin Zalo Tư Vấn (${zaloUrl})`, url: zaloUrl, icon: 'MessageCircle', defaultLabel: 'Chat Zalo' },
+          ...(facebookUrl
+            ? [{ label: 'Facebook Fanpage Studio', url: facebookUrl, icon: 'Share2', defaultLabel: 'Facebook Fanpage' }]
             : []),
-          ...(settings?.google_maps_url
-            ? [{ label: 'Chỉ Đường Google Maps Đến Studio', url: settings.google_maps_url, icon: 'MapPin', defaultLabel: 'Địa Chỉ Studio' }]
+          ...(mapsUrl
+            ? [{ label: 'Chỉ Đường Google Maps Đến Studio', url: mapsUrl, icon: 'MapPin', defaultLabel: 'Địa Chỉ Studio' }]
             : []),
         ],
       },
     ]
-  }, [systemAlbums, phone, zalo, settings])
+  }, [systemAlbums, rawPhone, zaloUrl, facebookUrl, mapsUrl])
 
   const activeItemsCount = items.filter((i) => i.is_active !== false).length
 
@@ -1515,11 +1519,11 @@ export default function QuickAccessManager() {
                     { label: 'Đặt Lịch (/contact)', url: '/contact', icon: 'Calendar', name: 'Đặt Lịch Chụp' },
                     { label: 'Giới Thiệu (/about)', url: '/about', icon: 'Heart', name: 'Về QA Stories' },
                     { label: 'Bảng Giá (/#pricing)', url: '/#pricing', icon: 'FileText', name: 'Bảng Giá Dịch Vụ' },
-                    ...(settings?.contact_phone
-                      ? [{ label: `Hotline (${settings.contact_phone})`, url: `tel:${settings.contact_phone}`, icon: 'PhoneCall', name: 'Gọi Hotline' }]
+                    ...(rawPhone
+                      ? [{ label: `Hotline (${rawPhone})`, url: `tel:${rawPhone}`, icon: 'PhoneCall', name: 'Gọi Hotline' }]
                       : []),
-                    ...(settings?.contact_zalo
-                      ? [{ label: 'Zalo Chat', url: `https://zalo.me/${settings.contact_zalo}`, icon: 'MessageCircle', name: 'Chat Zalo' }]
+                    ...(zaloUrl
+                      ? [{ label: 'Zalo Chat', url: zaloUrl, icon: 'MessageCircle', name: 'Chat Zalo' }]
                       : []),
                   ].map((sug) => (
                     <button

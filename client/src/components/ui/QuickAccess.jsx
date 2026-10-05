@@ -27,6 +27,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { useSettings } from '../../context/SettingsContext'
+import { isExternalUrl, formatExternalUrl, formatZaloUrl } from '../../utils/urlHelper'
 
 export const QUICK_ACCESS_ICONS = {
   Images: { icon: Images, label: 'Bộ ảnh / Album' },
@@ -214,10 +215,18 @@ export default function QuickAccess({ variant = 'floating' }) {
         {activeItems.map((item, idx) => {
           const IconData = QUICK_ACCESS_ICONS[item.icon] || QUICK_ACCESS_ICONS.Zap
           const IconComponent = IconData.icon
-          const isExternal =
-            item.to?.startsWith('http') ||
-            item.to?.startsWith('tel:') ||
-            item.to?.startsWith('mailto:')
+          const rawTo = String(item.to || item.url || '').trim()
+
+          let finalTo = rawTo
+          let isExt = isExternalUrl(rawTo)
+
+          if (rawTo.includes('zalo.me') || (item.icon === 'MessageCircle' && /^0[0-9]{8,10}$/.test(rawTo))) {
+            finalTo = formatZaloUrl(rawTo, settings?.brand_phone || '0901234567')
+            isExt = true
+          } else if (isExt) {
+            finalTo = formatExternalUrl(rawTo)
+          }
+
           const isHovered = hoveredIdx === idx
           const currentItemBg = isHovered ? hoverBgColor : 'transparent'
           const currentItemTextColor = isHovered ? hoverTextColor : textColor
@@ -261,13 +270,13 @@ export default function QuickAccess({ variant = 'floating' }) {
             ? 'relative group flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3.5 py-1 sm:py-2 rounded-xl sm:rounded-full transition-all duration-300 cursor-pointer select-none active:scale-95 shrink-0'
             : 'relative group flex items-center justify-center gap-2 sm:gap-2.5 px-3.5 sm:px-4.5 py-1.5 sm:py-2 rounded-full transition-all duration-300 cursor-pointer select-none active:scale-95 shrink-0'
 
-          if (isExternal) {
+          if (isExt) {
             return (
               <a
                 key={item.id || idx}
-                href={item.to}
-                target={item.to?.startsWith('http') ? '_blank' : undefined}
-                rel={item.to?.startsWith('http') ? 'noopener noreferrer' : undefined}
+                href={finalTo}
+                target={finalTo.startsWith('http') ? '_blank' : undefined}
+                rel={finalTo.startsWith('http') ? 'noopener noreferrer' : undefined}
                 onMouseEnter={() => setHoveredIdx(idx)}
                 onMouseLeave={() => setHoveredIdx(null)}
                 style={{ backgroundColor: currentItemBg }}
@@ -281,7 +290,7 @@ export default function QuickAccess({ variant = 'floating' }) {
           return (
             <Link
               key={item.id || idx}
-              to={item.to || '/'}
+              to={finalTo || '/'}
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
               style={{ backgroundColor: currentItemBg }}
