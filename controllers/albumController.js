@@ -54,14 +54,14 @@ export const createAlbum = async (req, res, next) => {
       sort_order,
     } = req.body
 
-    if (!title || !slug || !category) {
-      return res.status(400).json({ success: false, message: 'Tiêu đề, đường dẫn (slug) và danh mục là bắt buộc' })
+    if (!title || !slug) {
+      return res.status(400).json({ success: false, message: 'Tiêu đề và đường dẫn (slug) là bắt buộc' })
     }
 
     const album = await Album.create({
       title,
       slug,
-      category,
+      category: category || 'all',
       category_label: category_label || '',
       cover_image: cover_image || null,
       description: description || null,
@@ -100,7 +100,7 @@ export const updateAlbum = async (req, res, next) => {
     await Album.update(id, {
       title,
       slug,
-      category,
+      category: category || 'all',
       category_label: category_label || '',
       cover_image: cover_image || null,
       description: description || null,
@@ -137,7 +137,7 @@ export const addPhotoToAlbum = async (req, res, next) => {
     }
     const photo = await Photo.create({
       album_id: id,
-      filename: filename || 'photo.jpg',
+      filename: filename || 'photo.webp',
       original_name,
       size,
       url,
@@ -146,6 +146,30 @@ export const addPhotoToAlbum = async (req, res, next) => {
       sort_order: Number(sort_order) || 0,
     })
     res.json({ success: true, message: 'Thêm ảnh thành công', data: photo })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const addPhotosBatchToAlbum = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { photos } = req.body
+    if (!Array.isArray(photos) || photos.length === 0) {
+      return res.status(400).json({ success: false, message: 'Danh sách ảnh không hợp lệ' })
+    }
+    const formatted = photos.map((p, idx) => ({
+      album_id: id,
+      filename: p.filename || 'photo.webp',
+      original_name: p.original_name || p.originalname || '',
+      size: p.size || 0,
+      url: p.url,
+      title: p.title || (p.original_name ? p.original_name.replace(/\.[^/.]+$/, '') : `Ảnh ${idx + 1}`),
+      description: p.description || '',
+      sort_order: Number(p.sort_order) || (idx + 1),
+    }))
+    await Photo.createMany(formatted)
+    res.json({ success: true, message: `Đã thêm ${formatted.length} ảnh vào album thành công` })
   } catch (error) {
     next(error)
   }

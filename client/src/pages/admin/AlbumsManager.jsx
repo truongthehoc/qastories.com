@@ -27,6 +27,8 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  BookOpen,
+  CheckCircle2,
 } from 'lucide-react'
 import api from '../../utils/api'
 import { useSettings } from '../../context/SettingsContext'
@@ -37,6 +39,12 @@ export default function AlbumsManager() {
   const [systemPackages, setSystemPackages] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState('all')
+
+  // Album Modal Tab and Bulk Photos State
+  const [activeModalTab, setActiveModalTab] = useState('info') // 'info' | 'photos'
+  const [modalPhotos, setModalPhotos] = useState([])
+  const [albumSaving, setAlbumSaving] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(null)
 
   // Header Banner Modal State
   const [headerModalOpen, setHeaderModalOpen] = useState(false)
@@ -254,23 +262,21 @@ export default function AlbumsManager() {
   }
 
   const handleOpenCreateModal = () => {
-    const firstPkg = systemPackages[0]
-    const defaultCatId = firstPkg ? (firstPkg.slug || `pkg-${firstPkg.id}`) : (categories.filter(c => c.id !== 'all')[0]?.id || '')
-    const defaultCatLabel = firstPkg ? firstPkg.name : (categories.filter(c => c.id !== 'all')[0]?.label || '')
-    const defaultPkgName = firstPkg ? firstPkg.name : defaultCatLabel
-
+    setActiveModalTab('info')
+    setModalPhotos([])
+    setUploadProgress(null)
     setEditingAlbum(null)
     setCustomPackageMode(false)
     setAlbumForm({
       title: '',
       slug: '',
-      category: defaultCatId,
-      category_label: defaultCatLabel,
+      category: '',
+      category_label: '',
       cover_image: '',
       description: '',
       location: 'QA Stories Studio',
       date_shot: new Date().toISOString().split('T')[0],
-      package_name: defaultPkgName,
+      package_name: '',
       story: '',
       is_featured: true,
       sort_order: albums.length + 1,
@@ -278,13 +284,16 @@ export default function AlbumsManager() {
     setAlbumModalOpen(true)
   }
 
-  const handleOpenEditModal = (a) => {
+  const handleOpenEditModal = async (a) => {
+    setActiveModalTab('info')
+    setModalPhotos([])
+    setUploadProgress(null)
     setEditingAlbum(a)
     setCustomPackageMode(false)
     setAlbumForm({
       title: a.title || '',
       slug: a.slug || '',
-      category: a.category || (systemPackages[0]?.slug || ''),
+      category: a.category || '',
       category_label: a.category_label || '',
       cover_image: a.cover_image || '',
       description: a.description || '',
@@ -296,6 +305,75 @@ export default function AlbumsManager() {
       sort_order: a.sort_order || 0,
     })
     setAlbumModalOpen(true)
+
+    // Load album's current photos for tab 2
+    try {
+      const res = await api.get(`/albums/admin/${a.id}`)
+      if (res.success && res.data && Array.isArray(res.data.photos)) {
+        setModalPhotos(
+          res.data.photos.map((p) => ({
+            id: p.id,
+            url: p.url,
+            original_name: p.original_name || p.filename,
+            size: p.size,
+            sort_order: p.sort_order,
+            isNew: false,
+          }))
+        )
+      }
+    } catch (err) {
+      console.warn('Lỗi tải ảnh album edit:', err.message)
+    }
+  }
+
+  const handleSelectModalPhotos = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+    const newItems = files.map((f) => ({
+      file: f,
+      preview: URL.createObjectURL(f),
+      original_name: f.name,
+      size: f.size,
+      isNew: true,
+    }))
+    setModalPhotos((prev) => {
+      const updated = [...prev, ...newItems]
+      if (!albumForm.cover_image && updated.length > 0) {
+        setAlbumForm((f) => ({
+          ...f,
+          cover_image: updated[0].url || updated[0].preview,
+        }))
+      }
+      return updated
+    })
+  }
+
+  const handleRemoveModalPhoto = async (index, photo) => {
+    if (!photo.isNew && photo.id) {
+      if (!window.confirm('Xóa ảnh này vĩnh viễn khỏi album?')) return
+      try {
+        await api.delete(`/albums/photos/${photo.id}`)
+        fetchAlbums()
+      } catch (err) {
+        alert('Lỗi khi xóa ảnh: ' + err.message)
+        return
+      }
+    }
+    if (photo.preview) {
+      try {
+        URL.revokeObjectURL(photo.preview)
+      } catch {
+        // Ignore
+      }
+    }
+    setModalPhotos((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSetCoverPhoto = (photo) => {
+    setAlbumForm((prev) => ({
+      ...prev,
+      cover_image: photo.url || photo.preview,
+    }))
   }
 
   const handleCoverUpload = async (e) => {
@@ -316,28 +394,73 @@ export default function AlbumsManager() {
   }
 
   const handleAlbumSubmit = async (e) => {
-    e.preventDefault()
+    if (e && e.preventDefault) e.preventDefault()
     if (!albumForm.title || !albumForm.slug) {
       alert('Vui lòng nhập tên album và đường dẫn slug')
+      setActiveModalTab('info')
       return
     }
 
     try {
+      setAlbumSaving(true)
       const catObj = categories.find((c) => c.id === albumForm.category)
       const payload = {
         ...albumForm,
-        category_label: catObj?.label || albumForm.category_label,
+        category: albumForm.category || 'all',
+        category_label: catObj?.label || (albumForm.category ? albumForm.category_label : ''),
       }
+
+      let targetAlbumId = null
 
       if (editingAlbum) {
         await api.put(`/albums/${editingAlbum.id}`, payload)
+        targetAlbumId = editingAlbum.id
       } else {
-        await api.post('/albums', payload)
+        const createRes = await api.post('/albums', payload)
+        if (createRes.success && createRes.data) {
+          targetAlbumId = createRes.data.id
+        }
       }
+
+      // Upload and save any newly added photos
+      const newPhotoItems = modalPhotos.filter((p) => p.isNew && p.file)
+      if (newPhotoItems.length > 0 && targetAlbumId) {
+        const rawFiles = newPhotoItems.map((p) => p.file)
+        setUploadProgress({
+          phase: 'compress',
+          done: 0,
+          total: rawFiles.length,
+          percent: 5,
+          message: `Đang chuẩn bị tối ưu và tải lên ${rawFiles.length} ảnh...`,
+        })
+
+        const uploadRes = await api.uploadPhotos(rawFiles, 'gallery', (prog) => {
+          setUploadProgress(prog)
+        })
+
+        if (uploadRes.success && Array.isArray(uploadRes.files) && uploadRes.files.length > 0) {
+          await api.post(`/albums/${targetAlbumId}/photos/batch`, {
+            photos: uploadRes.files,
+          })
+
+          // If cover_image was a local blob preview or empty, update to first uploaded image URL
+          if (!payload.cover_image || payload.cover_image.startsWith('blob:')) {
+            const firstUrl = uploadRes.files[0].url
+            await api.put(`/albums/${targetAlbumId}`, {
+              ...payload,
+              cover_image: firstUrl,
+            })
+          }
+        }
+      }
+
       setAlbumModalOpen(false)
       fetchAlbums()
     } catch (error) {
       alert('Lỗi: ' + error.message)
+    } finally {
+      setAlbumSaving(false)
+      setUploadProgress(null)
     }
   }
 
@@ -387,21 +510,20 @@ export default function AlbumsManager() {
 
     try {
       setPhotosUploading(true)
-      const res = await api.uploadPhotos(files, 'gallery')
-      if (res.success && res.files) {
-        // Add each photo to album in db
-        for (let i = 0; i < res.files.length; i++) {
-          const file = res.files[i]
-          await api.post(`/albums/${currentAlbum.id}/photos`, {
-            filename: file.filename,
-            original_name: file.originalname,
-            size: file.size,
-            url: file.url,
-            title: file.originalname.replace(/\.[^/.]+$/, ''),
-            description: '',
-            sort_order: (currentAlbum.photos?.length || 0) + i + 1,
-          })
-        }
+      setUploadProgress({
+        phase: 'compress',
+        done: 0,
+        total: files.length,
+        percent: 5,
+        message: `Đang nén & tối ưu ${files.length} ảnh...`,
+      })
+      const res = await api.uploadPhotos(files, 'gallery', (prog) => {
+        setUploadProgress(prog)
+      })
+      if (res.success && res.files && res.files.length > 0) {
+        await api.post(`/albums/${currentAlbum.id}/photos/batch`, {
+          photos: res.files,
+        })
         // Refresh modal photos
         const updatedAlbumRes = await api.get(`/albums/admin/${currentAlbum.id}`)
         if (updatedAlbumRes.success) {
@@ -413,6 +535,7 @@ export default function AlbumsManager() {
       alert('Lỗi khi tải ảnh lên: ' + error.message)
     } finally {
       setPhotosUploading(false)
+      setUploadProgress(null)
     }
   }
 
@@ -1200,263 +1323,509 @@ export default function AlbumsManager() {
           {/* Drawer Panel */}
           <div className="relative w-full max-w-xl sm:max-w-2xl bg-white h-full shadow-2xl z-10 flex flex-col transform transition-transform duration-300 ease-out animate-in slide-in-from-right">
             {/* Drawer Header */}
-            <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-              <div className="space-y-0.5">
-                <div className="inline-flex items-center gap-1.5 text-xs text-primary font-semibold">
-                  <Images size={14} />
-                  <span>{editingAlbum ? 'Chỉnh Sửa Dữ Liệu' : 'Khởi Tạo Concept Mới'}</span>
+            <div className="p-4 sm:p-5 border-b border-slate-100 bg-white shrink-0">
+              <div className="flex items-center justify-between pb-3">
+                <div className="space-y-0.5">
+                  <div className="inline-flex items-center gap-1.5 text-xs text-primary font-semibold">
+                    <Sparkles size={13} />
+                    <span>{editingAlbum ? 'Cập Nhật Concept' : 'Khởi Tạo Concept Mới'}</span>
+                  </div>
+                  <h3 className="font-heading font-bold text-lg sm:text-xl text-slate-900">
+                    {editingAlbum ? `Chỉnh Sửa Album: ${editingAlbum.title}` : 'Tạo Album Ảnh Mới'}
+                  </h3>
                 </div>
-                <h3 className="font-heading font-bold text-lg sm:text-xl text-slate-900">
-                  {editingAlbum ? 'Chỉnh Sửa Album' : 'Tạo Album Ảnh Mới'}
-                </h3>
+                <button
+                  type="button"
+                  onClick={() => setAlbumModalOpen(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                  title="Đóng bảng trượt (Esc)"
+                >
+                  <X size={20} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setAlbumModalOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                title="Đóng bảng trượt (Esc)"
-              >
-                <X size={20} />
-              </button>
+
+              {/* Modal Tabs Navigation */}
+              <div className="flex items-center gap-2 border-b border-slate-200/80 -mb-4 sm:-mb-5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveModalTab('info')}
+                  className={`pb-3 px-3.5 text-xs font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                    activeModalTab === 'info'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  <BookOpen size={15} />
+                  <span>1. Thông Tin Concept</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveModalTab('photos')}
+                  className={`pb-3 px-3.5 text-xs font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                    activeModalTab === 'photos'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  <Images size={15} />
+                  <span>2. Tải & Quản Lý Ảnh Album</span>
+                  {modalPhotos.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary font-bold">
+                      {modalPhotos.length}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Drawer Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar space-y-5">
-              <form id="album-form" onSubmit={handleAlbumSubmit} className="space-y-4 text-xs">
-                {/* 1. Featured Toggle & Sort Order (Đưa lên đầu trang) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-3 border-b border-slate-100">
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1.5">Thứ Tự Sắp Xếp</label>
-                    <input
-                      type="number"
-                      value={albumForm.sort_order}
-                      onChange={(e) => setAlbumForm({ ...albumForm, sort_order: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs font-mono"
-                    />
-                  </div>
-
-                  <div className="flex items-end pb-0.5">
-                    <label className="relative flex items-center gap-3 p-2.5 rounded-xl bg-orange-50/60 hover:bg-orange-50 border border-orange-200/80 cursor-pointer w-full transition-colors">
+              {activeModalTab === 'info' && (
+                <form id="album-form" onSubmit={handleAlbumSubmit} className="space-y-4 text-xs">
+                  {/* 1. Featured Toggle & Sort Order (Đưa lên đầu trang) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-3 border-b border-slate-100">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1.5">Thứ Tự Sắp Xếp</label>
                       <input
-                        type="checkbox"
-                        checked={albumForm.is_featured}
-                        onChange={(e) => setAlbumForm({ ...albumForm, is_featured: e.target.checked })}
-                        className="w-4 h-4 rounded text-primary focus:ring-primary border-slate-300 cursor-pointer accent-primary"
+                        type="number"
+                        value={albumForm.sort_order}
+                        onChange={(e) => setAlbumForm({ ...albumForm, sort_order: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs font-mono"
                       />
-                      <div className="flex items-center gap-1.5">
-                        <Star size={14} className={albumForm.is_featured ? 'fill-amber-500 text-amber-500' : 'text-slate-400'} />
-                        <span className="text-xs font-semibold text-slate-800">
-                          Đánh dấu Album Nổi Bật
-                        </span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1.5">Tên Album / Tên Bé</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Nhập tên album hoặc tên bé..."
-                      value={albumForm.title}
-                      onChange={(e) => handleTitleChange(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1.5">Đường Dẫn Slug Tự Động</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Nhập đường dẫn slug..."
-                      value={albumForm.slug}
-                      onChange={(e) => setAlbumForm({ ...albumForm, slug: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1.5">
-                      Danh Mục Chụp (Gói Dịch Vụ) <span className="text-primary">*</span>
-                    </label>
-                    <select
-                      value={albumForm.category}
-                      onChange={(e) => {
-                        const sel = categories.find((c) => c.id === e.target.value)
-                        setAlbumForm({
-                          ...albumForm,
-                          category: e.target.value,
-                          category_label: sel?.label || e.target.value,
-                          package_name: customPackageMode ? albumForm.package_name : (sel?.packageName || sel?.label || albumForm.package_name),
-                        })
-                      }}
-                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm font-medium"
-                    >
-                      {categories
-                        .filter((c) => c.id !== 'all')
-                        .map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.label} {c.price && Number(c.price) > 0 ? `(${Number(c.price).toLocaleString('vi-VN')}đ)` : ''}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-slate-700 font-semibold">Tên Gói Dịch Vụ Áp Dụng</label>
-                      <button
-                        type="button"
-                        onClick={() => setCustomPackageMode(!customPackageMode)}
-                        className="text-[11px] text-primary hover:text-primary-dark font-medium underline"
-                      >
-                        {customPackageMode ? '← Chọn từ danh mục' : '+ Tự nhập tên khác'}
-                      </button>
                     </div>
 
-                    {!customPackageMode && systemPackages.length > 0 ? (
+                    <div className="flex items-end pb-0.5">
+                      <label className="relative flex items-center gap-3 p-2.5 rounded-xl bg-orange-50/60 hover:bg-orange-50 border border-orange-200/80 cursor-pointer w-full transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={albumForm.is_featured}
+                          onChange={(e) => setAlbumForm({ ...albumForm, is_featured: e.target.checked })}
+                          className="w-4 h-4 rounded text-primary focus:ring-primary border-slate-300 cursor-pointer accent-primary"
+                        />
+                        <div className="flex items-center gap-1.5">
+                          <Star size={14} className={albumForm.is_featured ? 'fill-amber-500 text-amber-500' : 'text-slate-400'} />
+                          <span className="text-xs font-semibold text-slate-800">
+                            Đánh dấu Album Nổi Bật
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1.5">
+                        Tên Album / Tên Bé <span className="text-primary">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Nhập tên album hoặc tên bé..."
+                        value={albumForm.title}
+                        onChange={(e) => handleTitleChange(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1.5">
+                        Đường Dẫn Slug Tự Động <span className="text-primary">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Nhập đường dẫn slug..."
+                        value={albumForm.slug}
+                        onChange={(e) => setAlbumForm({ ...albumForm, slug: e.target.value })}
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-slate-700 font-semibold">
+                          Danh Mục Chụp (Gói Dịch Vụ)
+                        </label>
+                        <span className="text-[11px] text-slate-400 font-normal">Không bắt buộc</span>
+                      </div>
                       <select
-                        value={albumForm.package_name}
+                        value={albumForm.category}
                         onChange={(e) => {
-                          if (e.target.value === '__custom__') {
-                            setCustomPackageMode(true)
-                          } else {
-                            setAlbumForm({ ...albumForm, package_name: e.target.value })
-                          }
+                          const sel = categories.find((c) => c.id === e.target.value)
+                          setAlbumForm({
+                            ...albumForm,
+                            category: e.target.value,
+                            category_label: sel?.label || e.target.value,
+                            package_name: customPackageMode ? albumForm.package_name : (sel?.packageName || sel?.label || albumForm.package_name),
+                          })
                         }}
                         className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm font-medium"
                       >
-                        <option value="">-- Chọn gói dịch vụ --</option>
-                        {systemPackages.map((p) => (
-                          <option key={p.id} value={p.name}>
-                            {p.name} {p.price && Number(p.price) > 0 ? `(${Number(p.price).toLocaleString('vi-VN')}đ)` : ''}
-                          </option>
-                        ))}
-                        <option value="__custom__">✍️ Tự nhập gói khác...</option>
+                        <option value="">-- Không chọn danh mục (Tất cả / Chung) --</option>
+                        {categories
+                          .filter((c) => c.id !== 'all')
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.label} {c.price && Number(c.price) > 0 ? `(${Number(c.price).toLocaleString('vi-VN')}đ)` : ''}
+                            </option>
+                          ))}
                       </select>
-                    ) : (
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-slate-700 font-semibold">Tên Gói Dịch Vụ Áp Dụng</label>
+                        <button
+                          type="button"
+                          onClick={() => setCustomPackageMode(!customPackageMode)}
+                          className="text-[11px] text-primary hover:text-primary-dark font-medium underline"
+                        >
+                          {customPackageMode ? '← Chọn từ danh mục' : '+ Tự nhập tên khác'}
+                        </button>
+                      </div>
+
+                      {!customPackageMode && systemPackages.length > 0 ? (
+                        <select
+                          value={albumForm.package_name}
+                          onChange={(e) => {
+                            if (e.target.value === '__custom__') {
+                              setCustomPackageMode(true)
+                            } else {
+                              setAlbumForm({ ...albumForm, package_name: e.target.value })
+                            }
+                          }}
+                          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm font-medium"
+                        >
+                          <option value="">-- Chọn gói dịch vụ --</option>
+                          {systemPackages.map((p) => (
+                            <option key={p.id} value={p.name}>
+                              {p.name} {p.price && Number(p.price) > 0 ? `(${Number(p.price).toLocaleString('vi-VN')}đ)` : ''}
+                            </option>
+                          ))}
+                          <option value="__custom__">✍️ Tự nhập gói khác...</option>
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          placeholder="Nhập tên gói dịch vụ áp dụng..."
+                          value={albumForm.package_name}
+                          onChange={(e) => setAlbumForm({ ...albumForm, package_name: e.target.value })}
+                          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Cover Image */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-slate-700 font-semibold">Ảnh Bìa Đại Diện Album</label>
+                      {modalPhotos.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveModalTab('photos')}
+                          className="text-[11px] text-primary hover:text-primary-dark underline font-medium"
+                        >
+                          Chọn từ tab ảnh ({modalPhotos.length} ảnh) →
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-2 mb-2">
                       <input
                         type="text"
-                        placeholder="Nhập tên gói dịch vụ áp dụng..."
-                        value={albumForm.package_name}
-                        onChange={(e) => setAlbumForm({ ...albumForm, package_name: e.target.value })}
-                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm"
+                        placeholder="Nhập đường dẫn ảnh hoặc tải ảnh từ thiết bị..."
+                        value={albumForm.cover_image}
+                        onChange={(e) => setAlbumForm({ ...albumForm, cover_image: e.target.value })}
+                        className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary text-xs"
                       />
+                      <label className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
+                        <Upload size={14} />
+                        <span>{coverUploading ? 'Đang tải...' : 'Tải ảnh bìa'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCoverUpload}
+                          disabled={coverUploading}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {albumForm.cover_image && (
+                      <div className="relative aspect-[16/9] max-h-48 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                        <img src={albumForm.cover_image} alt="Cover Preview" className="w-full h-full object-cover" />
+                      </div>
                     )}
                   </div>
-                </div>
 
-                {/* Cover Image */}
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1.5">Ảnh Bìa Đại Diện Album</label>
-                  <div className="flex gap-2 mb-2">
+                  {/* Location & Date */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1.5">Địa Điểm Thực Hiện</label>
+                      <input
+                        type="text"
+                        placeholder="Nhập địa điểm thực hiện buổi chụp..."
+                        value={albumForm.location}
+                        onChange={(e) => setAlbumForm({ ...albumForm, location: e.target.value })}
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-slate-700 font-semibold">
+                          Thời Gian Chụp <span className="text-primary">*</span>
+                        </label>
+                        {albumForm.date_shot && (
+                          <span className="text-[11px] font-semibold text-primary">
+                            {formatDateDisplay(albumForm.date_shot)}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="date"
+                        required
+                        value={toDateInputValue(albumForm.date_shot)}
+                        onChange={(e) => setAlbumForm({ ...albumForm, date_shot: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm font-medium cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Description & Story */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1.5">Mô Tả Ngắn Concept</label>
                     <input
                       type="text"
-                      placeholder="Nhập đường dẫn ảnh hoặc tải ảnh từ thiết bị..."
-                      value={albumForm.cover_image}
-                      onChange={(e) => setAlbumForm({ ...albumForm, cover_image: e.target.value })}
-                      className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary text-xs"
+                      placeholder="Nhập mô tả ngắn về concept..."
+                      value={albumForm.description}
+                      onChange={(e) => setAlbumForm({ ...albumForm, description: e.target.value })}
+                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs"
                     />
-                    <label className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1.5">Câu Chuyện Buổi Chụp (Story)</label>
+                    <textarea
+                      rows={4}
+                      placeholder="Nhập câu chuyện, cảm xúc và thông điệp của bộ ảnh..."
+                      value={albumForm.story}
+                      onChange={(e) => setAlbumForm({ ...albumForm, story: e.target.value })}
+                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs leading-relaxed"
+                    />
+                  </div>
+                </form>
+              )}
+
+              {activeModalTab === 'photos' && (
+                <div className="space-y-4">
+                  {/* Upload Drop Zone */}
+                  <div className="p-6 border-2 border-dashed border-orange-200 rounded-2xl bg-orange-50/40 text-center hover:bg-orange-50/70 transition-all">
+                    <div className="w-12 h-12 rounded-2xl bg-orange-100 text-primary flex items-center justify-center mx-auto mb-3 shadow-2xs">
+                      <Upload size={22} />
+                    </div>
+                    <h4 className="font-heading font-bold text-slate-800 text-sm mb-1">
+                      Tải Ảnh Hàng Loạt Vào Album
+                    </h4>
+                    <p className="text-slate-500 text-xs max-w-md mx-auto mb-4">
+                      Hỗ trợ chọn và tải lên cùng lúc <strong>50 - 100 ảnh</strong>. Hệ thống tự động nén WebP và tải lên từng đợt siêu mượt.
+                    </p>
+
+                    <label className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold shadow-md shadow-primary/25 cursor-pointer transition-all">
                       <Upload size={14} />
-                      <span>{coverUploading ? 'Đang tải...' : 'Tải ảnh bìa'}</span>
+                      <span>Chọn Ảnh Từ Máy (Nhiều Tấm Cùng Lúc)</span>
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={handleCoverUpload}
-                        disabled={coverUploading}
+                        multiple
+                        onChange={handleSelectModalPhotos}
                         className="hidden"
                       />
                     </label>
                   </div>
 
-                  {albumForm.cover_image && (
-                    <div className="relative aspect-[16/9] max-h-48 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
-                      <img src={albumForm.cover_image} alt="Cover Preview" className="w-full h-full object-cover" />
+                  {/* Upload Progress Bar if active */}
+                  {uploadProgress && (
+                    <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200 space-y-2 animate-in fade-in">
+                      <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                        <span className="flex items-center gap-1.5 text-primary">
+                          <RefreshCw size={14} className="animate-spin" />
+                          {uploadProgress.message || 'Đang xử lý tải ảnh...'}
+                        </span>
+                        <span className="font-mono text-primary font-bold">{uploadProgress.percent}%</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-orange-200/60 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-primary to-orange-500 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress.percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Photos Grid / Counter */}
+                  {modalPhotos.length > 0 ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                          <span>Danh Sách Ảnh ({modalPhotos.length})</span>
+                          <span className="text-[11px] text-slate-400 font-normal">
+                            (Bấm ngôi sao để đặt làm ảnh bìa)
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <label className="text-[11px] text-primary hover:text-primary-dark font-semibold cursor-pointer underline flex items-center gap-1">
+                            <Plus size={12} />
+                            <span>Thêm ảnh khác</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handleSelectModalPhotos}
+                              className="hidden"
+                            />
+                          </label>
+                          {modalPhotos.some((p) => p.isNew) && (
+                            <button
+                              type="button"
+                              onClick={() => setModalPhotos((prev) => prev.filter((p) => !p.isNew))}
+                              className="text-[11px] text-rose-500 hover:text-rose-700 underline cursor-pointer"
+                            >
+                              Hủy ảnh vừa chọn
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[380px] overflow-y-auto custom-scrollbar p-1">
+                        {modalPhotos.map((photo, idx) => {
+                          const isCover =
+                            albumForm.cover_image &&
+                            (albumForm.cover_image === photo.url ||
+                              albumForm.cover_image === photo.preview)
+
+                          return (
+                            <div
+                              key={photo.id || photo.preview || idx}
+                              className={`group relative aspect-square rounded-2xl overflow-hidden border-2 bg-slate-100 transition-all ${
+                                isCover
+                                  ? 'border-primary ring-2 ring-primary/20 shadow-md'
+                                  : 'border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              <img
+                                src={photo.url || photo.preview}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+
+                              {/* Cover badge */}
+                              {isCover && (
+                                <div className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-primary text-white text-[10px] font-bold shadow-xs flex items-center gap-1 z-10">
+                                  <Star size={10} className="fill-white" />
+                                  <span>Ảnh Bìa</span>
+                                </div>
+                              )}
+
+                              {/* Status badge: Mới chọn */}
+                              {photo.isNew && (
+                                <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-amber-500 text-white text-[9px] font-bold shadow-xs z-10">
+                                  Mới
+                                </div>
+                              )}
+
+                              {/* Overlay action buttons */}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-20">
+                                {!isCover && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetCoverPhoto(photo)}
+                                    className="p-2 rounded-xl bg-white text-slate-800 hover:text-primary shadow-xs transition-colors cursor-pointer"
+                                    title="Chọn làm ảnh bìa"
+                                  >
+                                    <Star size={14} />
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveModalPhoto(idx, photo)}
+                                  className="p-2 rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-xs transition-colors cursor-pointer"
+                                  title="Xóa ảnh"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+
+                              {/* Bottom filename info */}
+                              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 text-[10px] text-white truncate pointer-events-none z-10">
+                                {photo.original_name || `Ảnh ${idx + 1}`}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-slate-400 text-xs border border-slate-200 rounded-2xl bg-slate-50">
+                      <Images size={28} className="mx-auto mb-2 opacity-40" />
+                      <p>Chưa có ảnh nào được thêm vào album.</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Bấm nút phía trên để chọn nhiều ảnh cùng lúc từ máy tính của bạn.
+                      </p>
                     </div>
                   )}
                 </div>
-
-                {/* Location & Date */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1.5">Địa Điểm Thực Hiện</label>
-                    <input
-                      type="text"
-                      placeholder="Nhập địa điểm thực hiện buổi chụp..."
-                      value={albumForm.location}
-                      onChange={(e) => setAlbumForm({ ...albumForm, location: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-slate-700 font-semibold">
-                        Thời Gian Chụp <span className="text-primary">*</span>
-                      </label>
-                      {albumForm.date_shot && (
-                        <span className="text-[11px] font-semibold text-primary">
-                          {formatDateDisplay(albumForm.date_shot)}
-                        </span>
-                      )}
-                    </div>
-                    <input
-                      type="date"
-                      required
-                      value={toDateInputValue(albumForm.date_shot)}
-                      onChange={(e) => setAlbumForm({ ...albumForm, date_shot: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs sm:text-sm font-medium cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                {/* Description & Story */}
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1.5">Mô Tả Ngắn Concept</label>
-                  <input
-                    type="text"
-                    placeholder="Nhập mô tả ngắn về concept..."
-                    value={albumForm.description}
-                    onChange={(e) => setAlbumForm({ ...albumForm, description: e.target.value })}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1.5">Câu Chuyện Buổi Chụp (Story)</label>
-                  <textarea
-                    rows={4}
-                    placeholder="Nhập câu chuyện, cảm xúc và thông điệp của bộ ảnh..."
-                    value={albumForm.story}
-                    onChange={(e) => setAlbumForm({ ...albumForm, story: e.target.value })}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary text-xs leading-relaxed"
-                  />
-                </div>
-              </form>
+              )}
             </div>
 
             {/* Drawer Footer */}
-            <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setAlbumModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium transition-colors"
-              >
-                Hủy Bỏ
-              </button>
-              <button
-                type="submit"
-                form="album-form"
-                className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold shadow-md shadow-primary/25 transition-all"
-              >
-                {editingAlbum ? 'Lưu Thay Đổi' : 'Tạo Album Mới'}
-              </button>
+            <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+              <div className="text-xs text-slate-500">
+                {modalPhotos.length > 0 ? (
+                  <span className="flex items-center gap-1.5 text-emerald-600 font-medium">
+                    <CheckCircle2 size={14} />
+                    <span>Sẵn sàng lưu kèm {modalPhotos.length} ảnh</span>
+                  </span>
+                ) : (
+                  <span className="text-slate-400">Có thể tải ảnh ngay tại Tab 2 hoặc tải sau</span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setAlbumModalOpen(false)}
+                  disabled={albumSaving}
+                  className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAlbumSubmit}
+                  disabled={albumSaving}
+                  className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold shadow-md shadow-primary/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {albumSaving ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin" />
+                      <span>{uploadProgress?.message || 'Đang Lưu Album & Tải Ảnh...'}</span>
+                    </>
+                  ) : (
+                    <span>
+                      {editingAlbum
+                        ? 'Lưu Thay Đổi Album'
+                        : modalPhotos.length > 0
+                        ? `Tạo Album & Lưu ${modalPhotos.length} Ảnh`
+                        : 'Tạo Album Mới'}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

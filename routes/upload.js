@@ -4,6 +4,6 @@ import { uploadPhotos } from '../controllers/uploadController.js'
 
 const router = express.Router()
 
-router.post('/', upload.array('photos', 20), uploadPhotos)
+router.post('/', upload.array('photos', 100), uploadPhotos)
 
 export default router

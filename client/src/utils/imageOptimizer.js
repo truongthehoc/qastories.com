@@ -87,8 +87,30 @@ export async function optimizeImage(file, options = {}) {
   })
 }
 
-export async function optimizeFiles(files, options = {}) {
+export async function optimizeFiles(files, options = {}, onProgress = null) {
   if (!files || files.length === 0) return []
   const fileArray = Array.from(files)
-  return Promise.all(fileArray.map((f) => optimizeImage(f, options)))
+  const results = []
+  const concurrency = 3 // Process 3 images at a time to prevent browser canvas memory spikes
+  let completed = 0
+
+  for (let i = 0; i < fileArray.length; i += concurrency) {
+    const chunk = fileArray.slice(i, i + concurrency)
+    const chunkResults = await Promise.all(
+      chunk.map(async (f) => {
+        try {
+          const opt = await optimizeImage(f, options)
+          completed++
+          if (typeof onProgress === 'function') onProgress(completed, fileArray.length)
+          return opt
+        } catch {
+          completed++
+          if (typeof onProgress === 'function') onProgress(completed, fileArray.length)
+          return f
+        }
+      })
+    )
+    results.push(...chunkResults)
+  }
+  return results
 }

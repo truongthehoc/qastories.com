@@ -19,7 +19,7 @@ export const upload = multer({
   fileFilter,
   limits: {
     fileSize: 50 * 1024 * 1024, // Cho phép tới 50MB để tiếp nhận ảnh chất lượng cao
-    files: 50, // Hỗ trợ tải lên tới 50 ảnh cùng lúc
+    files: 100, // Hỗ trợ tải lên tới 100 ảnh cùng lúc
   },
 })
 

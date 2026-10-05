@@ -103,33 +103,78 @@ export const api = {
 
   clearCache: clearApiCache,
 
-  // Helper upload ảnh (Tự động tối ưu nén kích thước & độ phân giải trước khi gửi)
-  uploadPhotos: async (files, category = 'general') => {
-    let optimizedList = files
+  // Helper upload ảnh (Tự động tối ưu nén kích thước & chunk upload mượt mà)
+  uploadPhotos: async (files, category = 'general', onProgress = null) => {
+    if (!files || files.length === 0) return { success: true, files: [] }
+    const fileList = Array.from(files)
+
+    // 1. Tối ưu ảnh ở Client với hàng đợi tuần tự tránh tràn bộ nhớ
+    let optimizedList = fileList
     try {
       const maxDim = category === 'banners' ? 2560 : 2048
       const quality = category === 'branding' ? 0.90 : 0.85
-      optimizedList = await optimizeFiles(files, {
+      optimizedList = await optimizeFiles(fileList, {
         maxWidth: maxDim,
         maxHeight: maxDim,
         quality,
+      }, (done, total) => {
+        if (typeof onProgress === 'function') {
+          onProgress({
+            phase: 'compress',
+            done,
+            total,
+            percent: Math.round((done / total) * 35),
+            message: `Đang nén tối ưu: ${done}/${total} ảnh...`,
+          })
+        }
       })
     } catch (optErr) {
       console.warn('Tối ưu phía client bỏ qua, tiếp tục tải ảnh gốc:', optErr)
-      optimizedList = files
+      optimizedList = fileList
     }
 
-    const formData = new FormData()
-    formData.append('category', category)
-    for (let i = 0; i < optimizedList.length; i++) {
-      formData.append('photos', optimizedList[i])
+    // 2. Tải lên Server theo từng đợt (chunk 20 ảnh/request) để ổn định tuyệt đối
+    const chunkSize = 20
+    const allUploadedFiles = []
+    const totalFiles = optimizedList.length
+
+    for (let i = 0; i < optimizedList.length; i += chunkSize) {
+      const chunk = optimizedList.slice(i, i + chunkSize)
+      const formData = new FormData()
+      formData.append('category', category)
+      for (let j = 0; j < chunk.length; j++) {
+        formData.append('photos', chunk[j])
+      }
+
+      const res = await request('/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (res.success && Array.isArray(res.files)) {
+        allUploadedFiles.push(...res.files)
+      } else {
+        throw new Error(res.message || 'Tải ảnh lên máy chủ thất bại')
+      }
+
+      const uploadedCount = Math.min(i + chunkSize, totalFiles)
+      if (typeof onProgress === 'function') {
+        onProgress({
+          phase: 'upload',
+          done: uploadedCount,
+          total: totalFiles,
+          percent: 35 + Math.round((uploadedCount / totalFiles) * 65),
+          message: `Đang tải lên server: ${uploadedCount}/${totalFiles} ảnh...`,
+        })
+      }
     }
-    const res = await request('/upload', {
-      method: 'POST',
-      body: formData,
-    })
+
     clearApiCache()
-    return res
+    return {
+      success: true,
+      message: `Đã tải lên và tối ưu thành công ${allUploadedFiles.length} ảnh.`,
+      files: allUploadedFiles,
+    }
   },
 }
 

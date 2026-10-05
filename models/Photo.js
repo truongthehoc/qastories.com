@@ -14,6 +14,21 @@ export class Photo {
     return { id: result.insertId, album_id, filename, original_name, size, url, title, description, sort_order }
   }
 
+  static async createMany(photos = []) {
+    if (!photos || photos.length === 0) return []
+    const values = []
+    const placeholders = photos.map(p => {
+      values.push(p.album_id, p.filename || 'photo.webp', p.original_name || '', p.size || 0, p.url, p.title || null, p.description || null, p.sort_order || 0)
+      return '(?, ?, ?, ?, ?, ?, ?, ?)'
+    }).join(', ')
+
+    await pool.query(
+      `INSERT INTO photos (album_id, filename, original_name, size, url, title, description, sort_order) VALUES ${placeholders}`,
+      values
+    )
+    return true
+  }
+
   static async delete(id) {
     const [rows] = await pool.execute('SELECT * FROM photos WHERE id = ?', [id])
     const photo = rows[0] || null
