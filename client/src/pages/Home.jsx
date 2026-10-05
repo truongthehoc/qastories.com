@@ -133,6 +133,11 @@ export default function Home() {
     }
   }
 
+  const isAboutEnabled =
+    settings?.page_about_enabled !== '0' &&
+    settings?.page_about_enabled !== false &&
+    settings?.page_about_enabled !== 0
+
   const isContactEnabled =
     settings?.page_contact_enabled !== '0' &&
     settings?.page_contact_enabled !== false &&
@@ -150,83 +155,85 @@ export default function Home() {
       <HeroSlider />
 
       {/* 2. Intro Section */}
-      <section className="py-14 sm:py-20 lg:py-28 bg-offwhite relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
-            {/* Left Image Collage - Hidden on Mobile */}
-            <div className="hidden lg:block lg:col-span-6">
-              <ScrollReveal direction="right">
-                <div className="relative">
-                  {/* Main large image */}
-                  <div className="aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-orange-50">
-                    <img
-                      src={introImage}
-                      alt={`${siteName} Baby Photography`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                      width="600"
-                      height="750"
-                    />
-                  </div>
-                </div>
-              </ScrollReveal>
-            </div>
-
-            {/* Right Intro Text */}
-            <div className="lg:col-span-6">
-              <ScrollReveal direction="left" delay={0.2}>
-                <div>
-                  <span className="section-label flex items-center gap-2">
-                    <span className="w-6 h-0.5 bg-primary" /> {introLabel}
-                  </span>
-                  
-                  <h2 className="section-title mt-3 mb-5">
-                    {introTitle}{' '}
-                    {introTitleHighlight && (
-                      <span className="block italic text-primary font-normal mt-0.5">
-                        {introTitleHighlight}
-                      </span>
-                    )}
-                  </h2>
-
-                  <p className="section-subtitle mb-6 whitespace-pre-line">
-                    {introP1}
-                  </p>
-
-                  {introP2 && (
-                    <p className="font-body text-gray-600 text-base leading-relaxed mb-8 whitespace-pre-line">
-                      {introP2}
-                    </p>
-                  )}
-
-                  {introFeatures.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-                      {introFeatures.map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-2.5">
-                          <CheckCircle size={17} className="text-primary mt-0.5 shrink-0" />
-                          <span className="font-body text-sm font-medium text-gray-700">{item}</span>
-                        </div>
-                      ))}
+      {isAboutEnabled && (
+        <section className="py-14 sm:py-20 lg:py-28 bg-offwhite relative">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
+              {/* Left Image Collage - Hidden on Mobile */}
+              <div className="hidden lg:block lg:col-span-6">
+                <ScrollReveal direction="right">
+                  <div className="relative">
+                    {/* Main large image */}
+                    <div className="aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-orange-50">
+                      <img
+                        src={introImage}
+                        alt={`${siteName} Baby Photography`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                        width="600"
+                        height="750"
+                      />
                     </div>
-                  )}
-
-                  <div className="flex flex-wrap items-center gap-4">
-                    <Link to="/about" className="btn-primary">
-                      Tìm Hiểu Thêm Về Chúng Tôi <ArrowRight size={16} />
-                    </Link>
-                    {isContactEnabled && (
-                      <Link to="/contact" className="btn-outline">
-                        Đặt Lịch Chụp Ngay
-                      </Link>
-                    )}
                   </div>
-                </div>
-              </ScrollReveal>
+                </ScrollReveal>
+              </div>
+
+              {/* Right Intro Text */}
+              <div className="lg:col-span-6">
+                <ScrollReveal direction="left" delay={0.2}>
+                  <div>
+                    <span className="section-label flex items-center gap-2">
+                      <span className="w-6 h-0.5 bg-primary" /> {introLabel}
+                    </span>
+                    
+                    <h2 className="section-title mt-3 mb-5">
+                      {introTitle}{' '}
+                      {introTitleHighlight && (
+                        <span className="block italic text-primary font-normal mt-0.5">
+                          {introTitleHighlight}
+                        </span>
+                      )}
+                    </h2>
+
+                    <p className="section-subtitle mb-6 whitespace-pre-line">
+                      {introP1}
+                    </p>
+
+                    {introP2 && (
+                      <p className="font-body text-gray-600 text-base leading-relaxed mb-8 whitespace-pre-line">
+                        {introP2}
+                      </p>
+                    )}
+
+                    {introFeatures.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+                        {introFeatures.map((item, idx) => (
+                          <div key={idx} className="flex items-start gap-2.5">
+                            <CheckCircle size={17} className="text-primary mt-0.5 shrink-0" />
+                            <span className="font-body text-sm font-medium text-gray-700">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-4">
+                      <Link to="/about" className="btn-primary">
+                        Tìm Hiểu Thêm Về Chúng Tôi <ArrowRight size={16} />
+                      </Link>
+                      {isContactEnabled && (
+                        <Link to="/contact" className="btn-outline">
+                          Đặt Lịch Chụp Ngay
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </ScrollReveal>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 3. Featured Albums Carousel */}
       <section className="py-28 bg-offwhite border-t border-orange-100/60">
@@ -353,52 +360,45 @@ export default function Home() {
       </section>
 
       {/* 4. Call to Action */}
-      <section className="py-24 bg-gradient-to-r from-primary to-primary-dark relative overflow-hidden text-white">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
-        
-        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <ScrollReveal>
-            <span className="inline-block font-body text-primary-lighter text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full bg-white/10 mb-5 border border-white/20">
-              Đặt lịch hôm nay - Giữ trọn yêu thương
-            </span>
-            
-            <h2 className="section-title text-white mb-6">
-              Hãy Để Chúng Tôi Kể Câu Chuyện{' '}
-              <span className="italic font-normal text-primary-light block sm:inline">
-                Của Thiên Thần Nhỏ
+      {isContactEnabled && (
+        <section className="py-24 bg-gradient-to-r from-primary to-primary-dark relative overflow-hidden text-white">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
+          
+          <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
+            <ScrollReveal>
+              <span className="inline-block font-body text-primary-lighter text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full bg-white/10 mb-5 border border-white/20">
+                Đặt lịch hôm nay - Giữ trọn yêu thương
               </span>
-            </h2>
+              
+              <h2 className="section-title text-white mb-6">
+                Hãy Để Chúng Tôi Kể Câu Chuyện{' '}
+                <span className="italic font-normal text-primary-light block sm:inline">
+                  Của Thiên Thần Nhỏ
+                </span>
+              </h2>
 
-            <p className="font-body text-white/90 text-base sm:text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
-              Mỗi khoảnh khắc chỉ đến một lần trong đời. Hãy để <span className="whitespace-nowrap">QA Stories</span> cùng bạn lưu giữ những ký ức ngọt ngào nhất của con ngay hôm nay.
-            </p>
+              <p className="font-body text-white/90 text-base sm:text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
+                Mỗi khoảnh khắc chỉ đến một lần trong đời. Hãy để <span className="whitespace-nowrap">QA Stories</span> cùng bạn lưu giữ những ký ức ngọt ngào nhất của con ngay hôm nay.
+              </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              {isContactEnabled ? (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
                   to="/contact"
                   className="btn-white w-full sm:w-auto text-base px-9 py-4 text-primary font-bold shadow-2xl"
                 >
                   Đặt Lịch Chụp & Nhận Ưu Đãi <ArrowRight size={18} />
                 </Link>
-              ) : (
-                <Link
-                  to="/album"
-                  className="btn-white w-full sm:w-auto text-base px-9 py-4 text-primary font-bold shadow-2xl"
+                <a
+                  href={`tel:${(settings?.brand_phone || '0901234567').replace(/\s+/g, '')}`}
+                  className="btn-outline border-white text-white hover:bg-white hover:text-primary w-full sm:w-auto text-base px-8 py-4"
                 >
-                  Khám Phá Bộ Sưu Tập <ArrowRight size={18} />
-                </Link>
-              )}
-              <a
-                href={`tel:${(settings?.brand_phone || '0901234567').replace(/\s+/g, '')}`}
-                className="btn-outline border-white text-white hover:bg-white hover:text-primary w-full sm:w-auto text-base px-8 py-4"
-              >
-                Hotline: {settings?.brand_phone || '0901 234 567'}
-              </a>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
+                  Hotline: {settings?.brand_phone || '0901 234 567'}
+                </a>
+              </div>
+            </ScrollReveal>
+          </div>
+        </section>
+      )}
     </div>
   )
 }
