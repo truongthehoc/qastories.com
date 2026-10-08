@@ -1377,6 +1377,25 @@ export default function AlbumsManager() {
                   )}
                 </button>
               </div>
+
+              {/* Upload Progress Bar if active (Luôn hiển thị ở đầu cả 2 tab) */}
+              {uploadProgress && (
+                <div className="mt-3 p-3.5 rounded-2xl bg-orange-50 border border-orange-200/90 space-y-2 animate-in fade-in">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                    <span className="flex items-center gap-2 text-primary font-medium">
+                      <RefreshCw size={14} className="animate-spin text-primary" />
+                      {uploadProgress.message || 'Đang xử lý tải ảnh...'}
+                    </span>
+                    <span className="font-mono text-primary font-bold">{uploadProgress.percent}%</span>
+                  </div>
+                  <div className="w-full h-2.5 rounded-full bg-orange-200/60 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-orange-500 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress.percent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Drawer Scrollable Content */}
@@ -1884,7 +1903,26 @@ export default function AlbumsManager() {
             </div>
 
             {/* Drawer Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar space-y-4">
+              {/* Upload Progress Bar if active */}
+              {uploadProgress && (
+                <div className="p-3.5 rounded-2xl bg-orange-50 border border-orange-200/90 space-y-2 animate-in fade-in">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                    <span className="flex items-center gap-2 text-primary font-medium">
+                      <RefreshCw size={14} className="animate-spin text-primary" />
+                      {uploadProgress.message || 'Đang xử lý tải ảnh...'}
+                    </span>
+                    <span className="font-mono text-primary font-bold">{uploadProgress.percent}%</span>
+                  </div>
+                  <div className="w-full h-2.5 rounded-full bg-orange-200/60 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-orange-500 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress.percent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {currentAlbum.photos && currentAlbum.photos.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {currentAlbum.photos.map((p, idx) => (

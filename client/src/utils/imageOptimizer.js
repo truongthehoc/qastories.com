@@ -10,15 +10,15 @@ export async function optimizeImage(file, options = {}) {
   }
 
   const {
-    maxWidth = 2560,
-    maxHeight = 2560,
-    quality = 0.85,
+    maxWidth = 2048,
+    maxHeight = 2048,
+    quality = 0.82,
     outputType = 'image/webp',
   } = options
 
   return new Promise((resolve) => {
-    // If file is already small (< 300KB), return as is
-    if (file.size < 300 * 1024 && !options.forceResize) {
+    // If file is already small (< 250KB) and is already webp/jpeg, return as is unless forced
+    if (file.size < 250 * 1024 && (file.type === 'image/webp' || file.type === 'image/jpeg') && !options.forceResize) {
       return resolve(file)
     }
 
@@ -29,18 +29,14 @@ export async function optimizeImage(file, options = {}) {
       img.onerror = () => resolve(file) // Fallback to original
       img.onload = () => {
         try {
-          let width = img.width
-          let height = img.height
+          let width = img.naturalWidth || img.width
+          let height = img.naturalHeight || img.height
 
-          // Calculate new dimensions while maintaining aspect ratio
+          // Calculate new dimensions while maintaining aspect ratio perfectly
           if (width > maxWidth || height > maxHeight) {
-            if (width / maxWidth > height / maxHeight) {
-              height = Math.round((height * maxWidth) / width)
-              width = maxWidth
-            } else {
-              width = Math.round((width * maxHeight) / height)
-              height = Math.round((height * maxHeight) / img.height)
-            }
+            const ratio = Math.min(maxWidth / width, maxHeight / height)
+            width = Math.round(width * ratio)
+            height = Math.round(height * ratio)
           }
 
           const canvas = document.createElement('canvas')
@@ -50,7 +46,7 @@ export async function optimizeImage(file, options = {}) {
           const ctx = canvas.getContext('2d')
           if (!ctx) return resolve(file)
 
-          // Smooth rendering
+          // High quality image smoothing
           ctx.imageSmoothingEnabled = true
           ctx.imageSmoothingQuality = 'high'
           ctx.drawImage(img, 0, 0, width, height)
@@ -60,8 +56,7 @@ export async function optimizeImage(file, options = {}) {
 
           canvas.toBlob(
             (blob) => {
-              if (!blob || blob.size >= file.size) {
-                // If compressed size isn't smaller, keep original
+              if (!blob) {
                 return resolve(file)
               }
 
@@ -91,7 +86,7 @@ export async function optimizeFiles(files, options = {}, onProgress = null) {
   if (!files || files.length === 0) return []
   const fileArray = Array.from(files)
   const results = []
-  const concurrency = 3 // Process 3 images at a time to prevent browser canvas memory spikes
+  const concurrency = 2 // Process 2 images at a time to keep browser RAM and CPU ultra-light
   let completed = 0
 
   for (let i = 0; i < fileArray.length; i += concurrency) {
@@ -114,3 +109,4 @@ export async function optimizeFiles(files, options = {}, onProgress = null) {
   }
   return results
 }
+
