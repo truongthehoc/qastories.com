@@ -10,15 +10,15 @@ export async function optimizeImage(file, options = {}) {
   }
 
   const {
-    maxWidth = 2048,
-    maxHeight = 2048,
-    quality = 0.82,
+    maxWidth = 1920,
+    maxHeight = 1920,
+    quality = 0.80,
     outputType = 'image/webp',
   } = options
 
   return new Promise((resolve) => {
-    // If file is already small (< 250KB) and is already webp/jpeg, return as is unless forced
-    if (file.size < 250 * 1024 && (file.type === 'image/webp' || file.type === 'image/jpeg') && !options.forceResize) {
+    // If file is already webp and under 300KB, return as is
+    if (file.size < 300 * 1024 && file.type === 'image/webp' && !options.forceResize) {
       return resolve(file)
     }
 

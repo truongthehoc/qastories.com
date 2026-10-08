@@ -156,64 +156,67 @@ export const api = {
       optimizedList = fileList
     }
 
-    // 2. Tải lên Server theo từng đợt nhỏ (chunk 4-5 ảnh/request)
-    // Mỗi đợt chỉ khoảng 300KB-800KB, vượt qua mọi giới hạn Nginx & tránh tràn RAM VPS
-    const chunkSize = 4
-    const allUploadedFiles = []
-    let uploadedCount = 0
+    // 2. Tải lên Server từng ảnh một (1 ảnh/request) với hàng đợi 2 luồng song song
+    // Đảm bảo mỗi request chỉ ~150KB-250KB, KHÔNG BAO GIỜ bị lỗi 413 (Payload Too Large) của Nginx
+    const allUploadedFiles = new Array(totalCount)
+    let completedUploads = 0
+    const concurrency = 2
+    let currentIndex = 0
 
-    for (let i = 0; i < optimizedList.length; i += chunkSize) {
-      const chunk = optimizedList.slice(i, i + chunkSize)
-      const formData = new FormData()
-      formData.append('category', category)
-      for (let j = 0; j < chunk.length; j++) {
-        formData.append('photos', chunk[j])
-      }
-
-      // Hỗ trợ tự động thử lại 2 lần nếu mất kết nối mạng tạm thời
+    const uploadSingleFile = async (fileItem, index) => {
       let attempt = 0
-      let success = false
       let lastErr = null
 
-      while (attempt < 2 && !success) {
+      while (attempt < 3) {
         attempt++
         try {
+          const formData = new FormData()
+          formData.append('category', category)
+          formData.append('photos', fileItem)
+
           const res = await request('/upload', {
             method: 'POST',
             body: formData,
           })
 
-          if (res.success && Array.isArray(res.files)) {
-            allUploadedFiles.push(...res.files)
-            success = true
+          if (res.success && Array.isArray(res.files) && res.files[0]) {
+            allUploadedFiles[index] = res.files[0]
+            completedUploads++
+
+            if (typeof onProgress === 'function') {
+              const uploadPct = 40 + Math.round((completedUploads / totalCount) * 58)
+              onProgress({
+                phase: 'upload',
+                done: completedUploads,
+                total: totalCount,
+                percent: Math.min(98, uploadPct),
+                message: `Đang truyền lên máy chủ: ${completedUploads}/${totalCount} ảnh (${Math.min(98, uploadPct)}%)...`,
+              })
+            }
+            return
           } else {
-            throw new Error(res.message || 'Lỗi xử lý file từ máy chủ')
+            throw new Error(res.message || 'Máy chủ không phản hồi file tải lên')
           }
         } catch (err) {
           lastErr = err
-          if (attempt < 2) {
-            // Chờ 1 giây trước khi thử lại
-            await new Promise((r) => setTimeout(r, 1000))
+          if (attempt < 3) {
+            await new Promise((r) => setTimeout(r, 800))
           }
         }
       }
 
-      if (!success) {
-        throw new Error(lastErr?.message || `Tải lên thất bại ở đợt ảnh thứ ${Math.floor(i / chunkSize) + 1}`)
-      }
-
-      uploadedCount += chunk.length
-      if (typeof onProgress === 'function') {
-        const uploadPct = 40 + Math.round((uploadedCount / totalCount) * 58)
-        onProgress({
-          phase: 'upload',
-          done: uploadedCount,
-          total: totalCount,
-          percent: Math.min(98, uploadPct),
-          message: `Đang truyền lên máy chủ: ${uploadedCount}/${totalCount} ảnh (${Math.min(98, uploadPct)}%)...`,
-        })
-      }
+      throw new Error(lastErr?.message || `Tải lên thất bại ở ảnh ${fileItem.name || index + 1}`)
     }
+
+    // Worker pool xử lý song song tối đa 2 request cùng lúc
+    const workers = Array.from({ length: Math.min(concurrency, totalCount) }, async () => {
+      while (currentIndex < totalCount) {
+        const indexToProcess = currentIndex++
+        await uploadSingleFile(optimizedList[indexToProcess], indexToProcess)
+      }
+    })
+
+    await Promise.all(workers)
 
     if (typeof onProgress === 'function') {
       onProgress({
@@ -221,15 +224,15 @@ export const api = {
         done: totalCount,
         total: totalCount,
         percent: 100,
-        message: `Hoàn tất tải lên ${allUploadedFiles.length} ảnh! Đang lưu thông tin...`,
+        message: `Hoàn tất tải lên ${allUploadedFiles.filter(Boolean).length} ảnh! Đang lưu thông tin...`,
       })
     }
 
     clearApiCache()
     return {
       success: true,
-      message: `Đã tải lên và tối ưu thành công ${allUploadedFiles.length} ảnh.`,
-      files: allUploadedFiles,
+      message: `Đã tải lên và tối ưu thành công ${allUploadedFiles.filter(Boolean).length} ảnh.`,
+      files: allUploadedFiles.filter(Boolean),
     }
   },
 }
