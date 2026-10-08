@@ -1666,25 +1666,6 @@ export default function AlbumsManager() {
                     </label>
                   </div>
 
-                  {/* Upload Progress Bar if active */}
-                  {uploadProgress && (
-                    <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200 space-y-2 animate-in fade-in">
-                      <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-                        <span className="flex items-center gap-1.5 text-primary">
-                          <RefreshCw size={14} className="animate-spin" />
-                          {uploadProgress.message || 'Đang xử lý tải ảnh...'}
-                        </span>
-                        <span className="font-mono text-primary font-bold">{uploadProgress.percent}%</span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-orange-200/60 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary to-orange-500 rounded-full transition-all duration-300"
-                          style={{ width: `${uploadProgress.percent}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
                   {/* Photos Grid / Counter */}
                   {modalPhotos.length > 0 ? (
                     <div className="space-y-3">
