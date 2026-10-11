@@ -53,10 +53,22 @@ app.use((req, res, next) => {
 
 // Phục vụ thư mục static public (Chứa React build và uploads)
 const publicDir = path.join(__dirname, 'public')
-const uploadsDir = path.join(publicDir, 'uploads')
+const defaultUploadsDir = path.join(publicDir, 'uploads')
+const customUploadsDir = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : null
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true })
+// Đảm bảo thư mục uploads tồn tại
+if (customUploadsDir && !fs.existsSync(customUploadsDir)) {
+  try {
+    fs.mkdirSync(customUploadsDir, { recursive: true })
+    logger.info(`Đã khởi tạo thư mục uploads tại ổ đĩa riêng: ${customUploadsDir}`)
+  } catch (e) {
+    logger.warn(`Không thể tạo thư mục UPLOAD_DIR (${customUploadsDir}): ${e.message}`)
+  }
+}
+if (!fs.existsSync(defaultUploadsDir)) {
+  try {
+    fs.mkdirSync(defaultUploadsDir, { recursive: true })
+  } catch (e) {}
 }
 
 // 3. Static Files with High-Performance HTTP Caching
@@ -70,10 +82,27 @@ app.use(
   })
 )
 
-// B. Ảnh Uploads người dùng -> Cache 30 ngày kèm stale-while-revalidate
+// B. Ảnh Uploads người dùng -> Hỗ trợ cả ổ đĩa riêng (UPLOAD_DIR) và thư mục public/uploads mặc định
+if (customUploadsDir) {
+  logger.info(`📁 Kích hoạt phục vụ ảnh từ ổ đĩa riêng: ${customUploadsDir}`)
+  app.use(
+    '/uploads',
+    express.static(customUploadsDir, {
+      maxAge: '30d',
+      etag: true,
+      setHeaders: (res) => {
+        res.setHeader(
+          'Cache-Control',
+          'public, max-age=2592000, stale-while-revalidate=86400'
+        )
+      },
+    })
+  )
+}
+
 app.use(
   '/uploads',
-  express.static(uploadsDir, {
+  express.static(defaultUploadsDir, {
     maxAge: '30d',
     etag: true,
     setHeaders: (res) => {

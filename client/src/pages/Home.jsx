@@ -334,8 +334,13 @@ export default function Home() {
                             }
                           }}
                           onError={(e) => {
-                            e.target.onerror = null
-                            e.target.src = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85'
+                            if (!e.target.dataset.triedRetry && album.image?.startsWith('/uploads/')) {
+                              e.target.dataset.triedRetry = 'true'
+                              e.target.src = `${album.image}${album.image.includes('?') ? '&' : '?'}retry=1`
+                            } else {
+                              e.target.onerror = null
+                              e.target.style.opacity = '0.3'
+                            }
                           }}
                           className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
                           loading="lazy"

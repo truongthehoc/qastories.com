@@ -15,6 +15,14 @@ import { useSettings } from '../context/SettingsContext'
 import SEO from '../components/ui/SEO'
 import api from '../utils/api'
 
+function normalizeUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url
+  }
+  return url.startsWith('/') ? url : `/${url}`
+}
+
 export default function Album() {
   const { settings } = useSettings()
   const [activeTab, setActiveTab] = useState('all')
@@ -66,7 +74,7 @@ export default function Album() {
             title: item.title || 'Album Bé',
             category: item.category || 'all',
             categoryLabel: item.category_label || item.categoryLabel || item.category || 'Ngoại cảnh',
-            cover: item.cover_image || item.cover_url || item.cover || 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85',
+            cover: normalizeUrl(item.cover_image || item.cover_url || item.cover),
             desc: item.description || item.desc || item.story || '',
             story: item.story || item.description || item.desc || '',
             date: item.date_shot || item.date || '',
@@ -75,11 +83,11 @@ export default function Album() {
             photoCount: item.photo_count !== undefined ? item.photo_count : (Array.isArray(item.photos) ? item.photos.length : 1),
             gallery: (Array.isArray(item.photos) && item.photos.length > 0)
               ? item.photos.map(p => ({
-                  src: p.url || p.photo_url || p.src || p.photoUrl,
+                  src: normalizeUrl(p.url || p.photo_url || p.src || p.photoUrl),
                   title: p.title || item.title,
                   desc: p.description || item.desc || ''
                 }))
-              : [{ src: item.cover_image || item.cover_url || item.cover || 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85', title: item.title, desc: item.description || item.desc || '' }]
+              : [{ src: normalizeUrl(item.cover_image || item.cover_url || item.cover), title: item.title, desc: item.description || item.desc || '' }]
           }))
           setAlbums(formatted)
           try {
@@ -286,8 +294,13 @@ export default function Album() {
                           loading="lazy"
                           decoding="async"
                           onError={(e) => {
-                            e.target.onerror = null
-                            e.target.src = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85'
+                            if (!e.target.dataset.triedRetry && album.cover?.startsWith('/uploads/')) {
+                              e.target.dataset.triedRetry = 'true'
+                              e.target.src = `${album.cover}${album.cover.includes('?') ? '&' : '?'}retry=1`
+                            } else {
+                              e.target.onerror = null
+                              e.target.style.opacity = '0.3'
+                            }
                           }}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />

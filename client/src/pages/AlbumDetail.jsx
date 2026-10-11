@@ -18,6 +18,14 @@ import { useSettings } from '../context/SettingsContext'
 import SEO from '../components/ui/SEO'
 import api from '../utils/api'
 
+function normalizeUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url
+  }
+  return url.startsWith('/') ? url : `/${url}`
+}
+
 export default function AlbumDetail() {
   const { settings } = useSettings()
   const { id } = useParams()
@@ -67,7 +75,7 @@ export default function AlbumDetail() {
               title: item.title,
               category: item.category,
               categoryLabel: item.category_label || item.categoryLabel || item.category,
-              cover: item.cover_image || item.cover_url || item.cover,
+              cover: normalizeUrl(item.cover_image || item.cover_url || item.cover),
               desc: item.description || item.desc || item.story || '',
             }))
           )
@@ -81,7 +89,7 @@ export default function AlbumDetail() {
             title: item.title,
             category: item.category,
             categoryLabel: item.category_label || item.categoryLabel || item.category,
-            cover: item.cover_image || item.cover_url || item.cover,
+            cover: normalizeUrl(item.cover_image || item.cover_url || item.cover),
             desc: item.description || item.desc || item.story || '',
             story: item.story || item.description || item.desc || '',
             date: formatDateDisplay(item.date_shot) || item.date || '',
@@ -89,11 +97,11 @@ export default function AlbumDetail() {
             packageName: item.package_name || item.packageName || 'Gói Chụp Nghệ Thuật',
             gallery: (item.photos && item.photos.length > 0)
               ? item.photos.map(p => ({
-                  src: p.url || p.photo_url || p.src || p.photoUrl,
+                  src: normalizeUrl(p.url || p.photo_url || p.src || p.photoUrl),
                   title: p.title || item.title,
                   desc: p.description || item.desc || ''
                 }))
-              : [{ src: item.cover_image || item.cover_url || item.cover, title: item.title, desc: item.description || item.desc || '' }]
+              : [{ src: normalizeUrl(item.cover_image || item.cover_url || item.cover), title: item.title, desc: item.description || item.desc || '' }]
           }
           setAlbum(formatted)
         }
@@ -270,7 +278,11 @@ export default function AlbumDetail() {
                       alt={photo.title || album.title}
                       onError={(e) => {
                         e.target.onerror = null
-                        e.target.src = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85'
+                        if (!e.target.dataset.retried) {
+                          e.target.dataset.retried = 'true'
+                          const cleanSrc = photo.src.split('?')[0]
+                          e.target.src = `${cleanSrc}?t=${Date.now()}`
+                        }
                       }}
                       className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
                       loading="lazy"
