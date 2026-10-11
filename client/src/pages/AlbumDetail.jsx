@@ -249,50 +249,60 @@ export default function AlbumDetail() {
       {/* 2. Photo Gallery Grid */}
       <section className="py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Masonry / Grid Gallery */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {/* Masonry Photo Gallery - Hiển thị đúng tỉ lệ ảnh gốc */}
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 sm:gap-8 [column-fill:_balance]">
             {album.gallery.map((photo, index) => (
-              <motion.div
-                key={photo.title + index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.08 }}
-                onClick={() => handleOpenLightbox(index)}
-                className="group relative rounded-3xl overflow-hidden shadow-md bg-white border border-orange-100/70 card-hover cursor-pointer"
+              <div
+                key={`${photo.src || ''}_${index}`}
+                className="break-inside-avoid mb-6 sm:mb-8"
               >
-                <div className="aspect-[4/5] overflow-hidden bg-gray-100">
-                  <img
-                    src={photo.src}
-                    alt={photo.title}
-                    onError={(e) => {
-                      e.target.onerror = null
-                      e.target.src = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85'
-                    }}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '50px' }}
+                  transition={{ duration: 0.5, delay: (index % 3) * 0.08 }}
+                  onClick={() => handleOpenLightbox(index)}
+                  className="group relative rounded-3xl overflow-hidden shadow-md bg-white border border-orange-100/70 card-hover cursor-pointer"
+                >
+                  <div className="overflow-hidden bg-gray-100">
+                    <img
+                      src={photo.src}
+                      alt={photo.title || album.title}
+                      onError={(e) => {
+                        e.target.onerror = null
+                        e.target.src = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85'
+                      }}
+                      className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
 
-                {/* Hover overlay with zoom icon */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-6">
-                  <div className="self-end">
-                    <div className="w-10 h-10 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg">
-                      <ZoomIn size={20} />
+                  {/* Hover overlay with zoom icon */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-5 sm:p-6 pointer-events-none">
+                    <div className="self-end">
+                      <div className="w-10 h-10 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg">
+                        <ZoomIn size={20} />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <h3 className="font-heading font-bold text-white text-lg leading-snug">
-                      {photo.title}
-                    </h3>
-                    <p className="font-body text-white/80 text-xs mt-1">
-                      {photo.desc}
-                    </p>
+                    {(photo.title || photo.desc) && (
+                      <div>
+                        {photo.title && (
+                          <h3 className="font-heading font-bold text-white text-base sm:text-lg leading-snug line-clamp-1">
+                            {photo.title}
+                          </h3>
+                        )}
+                        {photo.desc && (
+                          <p className="font-body text-white/80 text-xs mt-1 line-clamp-2">
+                            {photo.desc}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              </div>
             ))}
           </div>
         </div>
