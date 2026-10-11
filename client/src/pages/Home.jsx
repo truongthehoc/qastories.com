@@ -314,19 +314,21 @@ export default function Home() {
               className="album-swiper pb-10"
             >
               {displayAlbums.map((album) => (
-                <SwiperSlide key={album.id} className="h-auto">
-                  <Link to={`/album/${album.slug || album.id}`} className="group block h-full select-none">
-                    <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-lg card-hover border border-orange-100/50 bg-gray-100">
+                <SwiperSlide key={album.id} className="!h-auto flex flex-col justify-start">
+                  <Link to={`/album/${album.slug || album.id}`} className="group block w-full select-none">
+                    <div className="relative rounded-3xl overflow-hidden shadow-lg card-hover border border-orange-100/50 bg-gray-100">
                       <img
                         src={album.image}
                         alt={album.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        onError={(e) => {
+                          e.target.onerror = null
+                          e.target.src = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85'
+                        }}
+                        className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
                         loading="lazy"
                         decoding="async"
-                        width="400"
-                        height="500"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
                       
                       {/* Tag top */}
                       <div className="absolute top-4 left-4">
@@ -336,16 +338,18 @@ export default function Home() {
                       </div>
 
                       {/* Bottom Info */}
-                      <div className="absolute bottom-0 left-0 right-0 p-6">
+                      <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 pointer-events-none">
                         <div className="font-body text-primary-light text-xs font-semibold uppercase tracking-wider mb-1">
                           {album.count}
                         </div>
-                        <h3 className="font-heading font-bold text-white text-2xl group-hover:text-primary-light transition-colors leading-snug">
+                        <h3 className="font-heading font-bold text-white text-xl sm:text-2xl group-hover:text-primary-light transition-colors leading-snug line-clamp-1">
                           {album.title}
                         </h3>
-                        <p className="font-body text-white/80 text-sm mt-2 line-clamp-2 leading-relaxed">
-                          {album.desc}
-                        </p>
+                        {album.desc && (
+                          <p className="font-body text-white/80 text-xs sm:text-sm mt-1.5 line-clamp-2 leading-relaxed">
+                            {album.desc}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </Link>
