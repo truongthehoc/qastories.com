@@ -5,6 +5,7 @@ import sharp from 'sharp'
 import logger from '../utils/logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const uploadBaseDir = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
   : path.join(__dirname, '..', 'public', 'uploads')
