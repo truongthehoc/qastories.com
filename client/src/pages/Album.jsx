@@ -19,9 +19,27 @@ export default function Album() {
   const { settings } = useSettings()
   const [activeTab, setActiveTab] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
-  const [albums, setAlbums] = useState(defaultAlbums)
+  const [albums, setAlbums] = useState(() => {
+    try {
+      const cached = localStorage.getItem('qastories_cached_albums_formatted')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {}
+    return []
+  })
   const [packages, setPackages] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem('qastories_cached_albums_formatted')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return false
+      }
+    } catch {}
+    return true
+  })
 
   useEffect(() => {
     let isMounted = true
@@ -64,9 +82,17 @@ export default function Album() {
               : [{ src: item.cover_image || item.cover_url || item.cover || 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85', title: item.title, desc: item.description || item.desc || '' }]
           }))
           setAlbums(formatted)
+          try {
+            localStorage.setItem('qastories_cached_albums_formatted', JSON.stringify(formatted))
+          } catch {}
+        } else if (!albums || albums.length === 0) {
+          setAlbums(defaultAlbums)
         }
       } catch (err) {
         console.warn('Using local albums data fallback:', err.message)
+        if (!albums || albums.length === 0) {
+          setAlbums(defaultAlbums)
+        }
       } finally {
         if (isMounted) setLoading(false)
       }

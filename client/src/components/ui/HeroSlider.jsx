@@ -40,7 +40,26 @@ const defaultSlides = [
 ]
 
 export default function HeroSlider() {
-  const [slides, setSlides] = useState(defaultSlides)
+  const [slides, setSlides] = useState(() => {
+    try {
+      const cached = localStorage.getItem('qastories_cached_banners')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {}
+    return []
+  })
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem('qastories_cached_banners')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return false
+      }
+    } catch {}
+    return true
+  })
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth < 768
@@ -64,9 +83,14 @@ export default function HeroSlider() {
         const res = await api.get('/banners')
         if (isMounted && res.success && res.data && res.data.length > 0) {
           setSlides(res.data)
+          try {
+            localStorage.setItem('qastories_cached_banners', JSON.stringify(res.data))
+          } catch {}
         }
       } catch (err) {
         // Fallback to defaultSlides
+      } finally {
+        if (isMounted) setLoading(false)
       }
     }
     loadBanners()
@@ -79,7 +103,9 @@ export default function HeroSlider() {
   // - Khi truy cập bằng Mobile: Lấy riêng danh sách banner Mobile (device_type === 'mobile')
   // - Khi truy cập bằng PC: Lấy riêng danh sách banner PC (device_type === 'pc')
   const displayedSlides = useMemo(() => {
-    if (!slides || slides.length === 0) return defaultSlides
+    if (!slides || slides.length === 0) {
+      return loading ? [] : defaultSlides
+    }
 
     if (isMobile) {
       // 1. Ưu tiên tuyệt đối danh sách Banner được tạo riêng cho Mobile
@@ -98,7 +124,7 @@ export default function HeroSlider() {
 
       return slides
     }
-  }, [slides, isMobile])
+  }, [slides, isMobile, loading])
 
   return (
     <section className="relative h-screen w-full overflow-hidden bg-neutral-900 flex flex-col justify-end select-none">

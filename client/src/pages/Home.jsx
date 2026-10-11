@@ -66,7 +66,26 @@ const defaultFeaturedAlbums = [
 
 export default function Home() {
   const { settings } = useSettings()
-  const [albums, setAlbums] = useState([])
+  const [albums, setAlbums] = useState(() => {
+    try {
+      const cached = localStorage.getItem('qastories_cached_albums')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {}
+    return []
+  })
+  const [loadingAlbums, setLoadingAlbums] = useState(() => {
+    try {
+      const cached = localStorage.getItem('qastories_cached_albums')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return false
+      }
+    } catch {}
+    return true
+  })
 
   useEffect(() => {
     let isMounted = true
@@ -75,9 +94,14 @@ export default function Home() {
         const res = await api.get('/albums')
         if (isMounted && res.success && res.data && res.data.length > 0) {
           setAlbums(res.data)
+          try {
+            localStorage.setItem('qastories_cached_albums', JSON.stringify(res.data))
+          } catch {}
         }
       } catch (err) {
         console.warn('Lỗi tải albums trang chủ:', err.message)
+      } finally {
+        if (isMounted) setLoadingAlbums(false)
       }
     }
     fetchAlbums()
@@ -87,7 +111,9 @@ export default function Home() {
   }, [])
 
   const displayAlbums = useMemo(() => {
-    if (!albums || albums.length === 0) return defaultFeaturedAlbums
+    if (!albums || albums.length === 0) {
+      return loadingAlbums ? [] : defaultFeaturedAlbums
+    }
     const featured = albums.filter((a) => a.is_featured)
     const list = featured.length > 0 ? featured : albums
     return list.map((a) => ({
@@ -99,7 +125,7 @@ export default function Home() {
       count: `${a.photo_count || 0} bức ảnh`,
       tag: a.category_label || a.category || 'Nổi Bật',
     }))
-  }, [albums])
+  }, [albums, loadingAlbums])
 
   // Track aspect ratio for each album cover (landscape vs portrait)
   const [imageAspectMap, setImageAspectMap] = useState({})
@@ -277,23 +303,23 @@ export default function Home() {
 
           {/* Responsive Bento Grid - Sắp xếp xuống dòng linh hoạt, ảnh ngang tự động hiển thị lớn hơn */}
           <ScrollReveal delay={0.2}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 [grid-auto-flow:_dense]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-start [grid-auto-flow:_dense]">
               {displayAlbums.map((album) => {
                 const isLandscape = imageAspectMap[album.id] === 'landscape'
                 return (
                   <div
                     key={album.id}
-                    className={`${
+                    className={
                       isLandscape
                         ? 'col-span-1 md:col-span-2 lg:col-span-2'
                         : 'col-span-1'
-                    } flex flex-col`}
+                    }
                   >
                     <Link
                       to={`/album/${album.slug || album.id}`}
-                      className="group block w-full h-full select-none"
+                      className="group block w-full select-none"
                     >
-                      <div className="relative rounded-3xl overflow-hidden shadow-lg card-hover border border-orange-100/50 bg-gray-100 h-full flex flex-col justify-end">
+                      <div className="relative rounded-3xl overflow-hidden shadow-lg card-hover border border-orange-100/50 bg-gray-100">
                         <img
                           src={album.image}
                           alt={album.title}
