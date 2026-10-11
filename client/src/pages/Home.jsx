@@ -1,17 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
-import { Swiper, SwiperSlide } from 'swiper/react'
-import { Autoplay, Navigation, Pagination } from 'swiper/modules'
+import { ArrowRight, CheckCircle } from 'lucide-react'
 import HeroSlider from '../components/ui/HeroSlider'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import { useSettings } from '../context/SettingsContext'
 import SEO from '../components/ui/SEO'
 import api from '../utils/api'
-
-import 'swiper/css'
-import 'swiper/css/navigation'
-import 'swiper/css/pagination'
 
 const defaultFeaturedAlbums = [
   {
@@ -106,6 +100,27 @@ export default function Home() {
       tag: a.category_label || a.category || 'Nổi Bật',
     }))
   }, [albums])
+
+  // Track aspect ratio for each album cover (landscape vs portrait)
+  const [imageAspectMap, setImageAspectMap] = useState({})
+
+  useEffect(() => {
+    if (!displayAlbums || displayAlbums.length === 0) return
+    displayAlbums.forEach((alb) => {
+      if (!alb.image) return
+      const img = new Image()
+      img.src = alb.image
+      img.onload = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+          const isLandscape = img.naturalWidth / img.naturalHeight >= 1.2
+          setImageAspectMap((prev) => ({
+            ...prev,
+            [alb.id]: isLandscape ? 'landscape' : 'portrait',
+          }))
+        }
+      }
+    })
+  }, [displayAlbums])
 
   // Dynamic Intro Section Settings
   const siteName = settings?.brand_name || settings?.site_name || 'QA Stories'
@@ -235,7 +250,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* 3. Featured Albums Carousel */}
+      {/* 3. Featured Albums Grid */}
       <section className="py-28 bg-offwhite border-t border-orange-100/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal>
@@ -251,26 +266,8 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Navigation & See All Controls */}
+              {/* See All Controls */}
               <div className="flex items-center gap-4 self-start md:self-end">
-                {/* Manual Navigation Arrow Buttons */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    aria-label="Previous Albums"
-                    className="album-prev-btn w-11 h-11 rounded-full border border-orange-200 bg-white hover:bg-primary text-gray-700 hover:text-white hover:border-primary shadow-sm flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Next Albums"
-                    className="album-next-btn w-11 h-11 rounded-full border border-orange-200 bg-white hover:bg-primary text-gray-700 hover:text-white hover:border-primary shadow-sm flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-
                 <Link to="/album" className="btn-primary shrink-0">
                   Xem Tất Cả Album <ArrowRight size={16} />
                 </Link>
@@ -278,87 +275,79 @@ export default function Home() {
             </div>
           </ScrollReveal>
 
-          {/* Swiper Slider with 3 cards & Autoplay */}
+          {/* Responsive Bento Grid - Sắp xếp xuống dòng linh hoạt, ảnh ngang tự động hiển thị lớn hơn */}
           <ScrollReveal delay={0.2}>
-            <Swiper
-              modules={[Autoplay, Navigation, Pagination]}
-              spaceBetween={28}
-              slidesPerView={1}
-              breakpoints={{
-                640: {
-                  slidesPerView: 2,
-                  spaceBetween: 24,
-                },
-                1024: {
-                  slidesPerView: 3,
-                  spaceBetween: 28,
-                },
-              }}
-              autoplay={{
-                delay: 3500,
-                disableOnInteraction: false,
-                pauseOnMouseEnter: true,
-              }}
-              loop={true}
-              speed={800}
-              navigation={{
-                prevEl: '.album-prev-btn',
-                nextEl: '.album-next-btn',
-              }}
-              pagination={{
-                clickable: true,
-                el: '.album-pagination',
-                bulletClass: 'hero-bullet',
-                bulletActiveClass: 'hero-bullet-active',
-              }}
-              className="album-swiper pb-10"
-            >
-              {displayAlbums.map((album) => (
-                <SwiperSlide key={album.id} className="!h-auto flex flex-col justify-start">
-                  <Link to={`/album/${album.slug || album.id}`} className="group block w-full select-none">
-                    <div className="relative rounded-3xl overflow-hidden shadow-lg card-hover border border-orange-100/50 bg-gray-100">
-                      <img
-                        src={album.image}
-                        alt={album.title}
-                        onError={(e) => {
-                          e.target.onerror = null
-                          e.target.src = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85'
-                        }}
-                        className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
-                      
-                      {/* Tag top */}
-                      <div className="absolute top-4 left-4">
-                        <span className="bg-white/95 backdrop-blur-md text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
-                          {album.tag}
-                        </span>
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 [grid-auto-flow:_dense]">
+              {displayAlbums.map((album) => {
+                const isLandscape = imageAspectMap[album.id] === 'landscape'
+                return (
+                  <div
+                    key={album.id}
+                    className={`${
+                      isLandscape
+                        ? 'col-span-1 md:col-span-2 lg:col-span-2'
+                        : 'col-span-1'
+                    } flex flex-col`}
+                  >
+                    <Link
+                      to={`/album/${album.slug || album.id}`}
+                      className="group block w-full h-full select-none"
+                    >
+                      <div className="relative rounded-3xl overflow-hidden shadow-lg card-hover border border-orange-100/50 bg-gray-100 h-full flex flex-col justify-end">
+                        <img
+                          src={album.image}
+                          alt={album.title}
+                          onLoad={(e) => {
+                            const { naturalWidth, naturalHeight } = e.target
+                            if (naturalWidth && naturalHeight) {
+                              const isLand = naturalWidth / naturalHeight >= 1.2
+                              setImageAspectMap((prev) => {
+                                if (prev[album.id] === (isLand ? 'landscape' : 'portrait')) return prev
+                                return { ...prev, [album.id]: isLand ? 'landscape' : 'portrait' }
+                              })
+                            }
+                          }}
+                          onError={(e) => {
+                            e.target.onerror = null
+                            e.target.src = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85'
+                          }}
+                          className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
 
-                      {/* Bottom Info */}
-                      <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 pointer-events-none">
-                        <div className="font-body text-primary-light text-xs font-semibold uppercase tracking-wider mb-1">
-                          {album.count}
+                        {/* Tag top */}
+                        <div className="absolute top-4 left-4">
+                          <span className="bg-white/95 backdrop-blur-md text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
+                            {album.tag}
+                          </span>
                         </div>
-                        <h3 className="font-heading font-bold text-white text-xl sm:text-2xl group-hover:text-primary-light transition-colors leading-snug line-clamp-1">
-                          {album.title}
-                        </h3>
-                        {album.desc && (
-                          <p className="font-body text-white/80 text-xs sm:text-sm mt-1.5 line-clamp-2 leading-relaxed">
-                            {album.desc}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                </SwiperSlide>
-              ))}
-            </Swiper>
 
-            {/* Pagination Dots */}
-            <div className="album-pagination flex items-center justify-center gap-2 mt-4" />
+                        {/* Bottom Info */}
+                        <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 pointer-events-none">
+                          <div className="font-body text-primary-light text-xs font-semibold uppercase tracking-wider mb-1">
+                            {album.count}
+                          </div>
+                          <h3
+                            className={`font-heading font-bold text-white ${
+                              isLandscape ? 'text-xl sm:text-2xl md:text-3xl' : 'text-xl sm:text-2xl'
+                            } group-hover:text-primary-light transition-colors leading-snug line-clamp-1`}
+                          >
+                            {album.title}
+                          </h3>
+                          {album.desc && (
+                            <p className="font-body text-white/80 text-xs sm:text-sm mt-1.5 line-clamp-2 leading-relaxed">
+                              {album.desc}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  </div>
+                )
+              })}
+            </div>
           </ScrollReveal>
         </div>
       </section>
