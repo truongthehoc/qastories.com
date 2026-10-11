@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay, EffectFade, Navigation, Pagination } from 'swiper/modules'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -23,21 +23,39 @@ const defaultSlides = [
     id: 1,
     image_url: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=75&auto=format',
     title: 'QA Stories Newborn Photography 1',
+    device_type: 'all',
   },
   {
     id: 2,
     image_url: 'https://images.unsplash.com/photo-1546015720-b8b30df5aa27?w=1080&q=75&auto=format',
     title: 'QA Stories Baby Photography 2',
+    device_type: 'all',
   },
   {
     id: 3,
     image_url: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=1080&q=75&auto=format',
     title: 'QA Stories Family Photography 3',
+    device_type: 'all',
   },
 ]
 
 export default function HeroSlider() {
   const [slides, setSlides] = useState(defaultSlides)
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768
+    }
+    return false
+  })
+
+  // Detect responsive screen resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -57,11 +75,41 @@ export default function HeroSlider() {
     }
   }, [])
 
+  // Phân tách banner thông minh theo thiết bị (PC / Mobile)
+  const displayedSlides = useMemo(() => {
+    if (!slides || slides.length === 0) return defaultSlides
+
+    if (isMobile) {
+      // 1. Ưu tiên các banner được cấu hình riêng cho Mobile
+      const mobileSpecific = slides.filter((s) => s.device_type === 'mobile')
+      if (mobileSpecific.length > 0) return mobileSpecific
+
+      // 2. Banner có riêng ảnh mobile hoặc chạy chung 'all'
+      const mobileUsable = slides.filter(
+        (s) => s.device_type === 'all' || s.image_mobile || !s.device_type
+      )
+      if (mobileUsable.length > 0) return mobileUsable
+
+      return slides
+    } else {
+      // 1. Ưu tiên các banner được cấu hình riêng cho PC
+      const pcSpecific = slides.filter((s) => s.device_type === 'pc')
+      if (pcSpecific.length > 0) return pcSpecific
+
+      // 2. Banner dùng chung cho cả 2 hoặc chưa set
+      const pcUsable = slides.filter((s) => s.device_type === 'all' || !s.device_type)
+      if (pcUsable.length > 0) return pcUsable
+
+      return slides
+    }
+  }, [slides, isMobile])
+
   return (
     <section className="relative h-screen w-full overflow-hidden bg-neutral-900 flex flex-col justify-end select-none">
       {/* 1. Fullscreen Background Slideshow */}
       <div className="absolute inset-0 z-0">
         <Swiper
+          key={isMobile ? 'mobile-slider' : 'desktop-slider'}
           modules={[Autoplay, EffectFade, Navigation, Pagination]}
           effect="fade"
           speed={1400}
@@ -76,30 +124,34 @@ export default function HeroSlider() {
             prevEl: '.hero-prev-btn',
             nextEl: '.hero-next-btn',
           }}
-          loop
+          loop={displayedSlides.length > 1}
           className="h-full w-full hero-swiper"
         >
-          {slides.map((slide, idx) => {
-            const rawUrl = slide.image_url || slide.image
+          {displayedSlides.map((slide, idx) => {
+            // Nếu là mobile và có riêng ảnh mobile thì ưu tiên lấy image_mobile
+            const rawUrl =
+              isMobile && slide.image_mobile
+                ? slide.image_mobile
+                : slide.image_url || slide.image
             const isUnsplash = rawUrl?.includes('images.unsplash.com')
 
             return (
               <SwiperSlide key={slide.id || idx} className="relative h-full w-full">
                 <img
-                  src={getOptimizedSrc(rawUrl, 1080)}
+                  src={getOptimizedSrc(rawUrl, isMobile ? 800 : 1920)}
                   srcSet={
                     isUnsplash
-                      ? `${getOptimizedSrc(rawUrl, 640)} 640w, ${getOptimizedSrc(rawUrl, 1080)} 1080w, ${getOptimizedSrc(rawUrl, 1600)} 1600w`
+                      ? `${getOptimizedSrc(rawUrl, 640)} 640w, ${getOptimizedSrc(rawUrl, 1080)} 1080w, ${getOptimizedSrc(rawUrl, 1920)} 1920w`
                       : undefined
                   }
                   sizes="100vw"
                   alt={slide.title || slide.alt || 'QA Stories Baby Photography'}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-center"
                   loading={idx === 0 ? 'eager' : 'lazy'}
                   fetchPriority={idx === 0 ? 'high' : 'low'}
                   decoding="async"
-                  width="1080"
-                  height="1440"
+                  width={isMobile ? '800' : '1920'}
+                  height={isMobile ? '1200' : '1080'}
                 />
                 {/* Top gradient for Navbar visibility */}
                 <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />

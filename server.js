@@ -139,6 +139,12 @@ app.listen(PORT, async () => {
     } catch (e) {
       console.warn('⚠️ Lỗi khởi tạo bảng packages:', e.message)
     }
+    try {
+      const { Banner } = await import('./models/Banner.js')
+      await Banner.ensureColumns()
+    } catch (e) {
+      console.warn('⚠️ Lỗi nâng cấp bảng banners:', e.message)
+    }
   }
 })
 

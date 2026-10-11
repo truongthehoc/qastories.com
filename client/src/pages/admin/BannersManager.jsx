@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Home as HomeIcon,
   Image as ImageIcon,
@@ -14,6 +14,8 @@ import {
   BookOpen,
   Save,
   CheckCircle2,
+  Monitor,
+  Smartphone,
 } from 'lucide-react'
 import api from '../../utils/api'
 import { useSettings } from '../../context/SettingsContext'
@@ -21,6 +23,7 @@ import { useSettings } from '../../context/SettingsContext'
 export default function BannersManager() {
   const { settings, refreshSettings } = useSettings()
   const [activeTab, setActiveTab] = useState('banners') // 'banners' | 'intro'
+  const [deviceFilter, setDeviceFilter] = useState('all') // 'all' | 'pc' | 'mobile'
 
   // --- Banner State ---
   const [banners, setBanners] = useState([])
@@ -28,11 +31,14 @@ export default function BannersManager() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState(null)
   const [uploadingBanner, setUploadingBanner] = useState(false)
+  const [uploadingMobileBanner, setUploadingMobileBanner] = useState(false)
 
   const [bannerForm, setBannerForm] = useState({
     title: '',
     subtitle: '',
+    device_type: 'pc', // 'pc' | 'mobile' | 'all'
     image_url: '',
+    image_mobile: '',
     link_url: '',
     button_text: '',
     sort_order: 1,
@@ -86,6 +92,26 @@ export default function BannersManager() {
       setLoadingBanners(false)
     }
   }
+
+  // Phân loại danh sách banner theo thiết bị
+  const pcBanners = useMemo(
+    () => banners.filter((b) => b.device_type === 'pc' || b.device_type === 'all' || !b.device_type),
+    [banners]
+  )
+  const mobileBanners = useMemo(
+    () => banners.filter((b) => b.device_type === 'mobile' || b.device_type === 'all'),
+    [banners]
+  )
+
+  const filteredBanners = useMemo(() => {
+    if (deviceFilter === 'pc') {
+      return banners.filter((b) => b.device_type === 'pc' || b.device_type === 'all' || !b.device_type)
+    }
+    if (deviceFilter === 'mobile') {
+      return banners.filter((b) => b.device_type === 'mobile' || b.device_type === 'all')
+    }
+    return banners
+  }, [banners, deviceFilter])
 
   // Load Intro Settings
   const syncIntroForm = (data) => {
@@ -142,10 +168,13 @@ export default function BannersManager() {
   // --- Banner Actions ---
   const handleOpenCreateModal = () => {
     setEditingBanner(null)
+    const initialDevice = deviceFilter === 'mobile' ? 'mobile' : 'pc'
     setBannerForm({
       title: '',
       subtitle: '',
+      device_type: initialDevice,
       image_url: '',
+      image_mobile: '',
       link_url: '',
       button_text: '',
       sort_order: banners.length + 1,
@@ -159,7 +188,9 @@ export default function BannersManager() {
     setBannerForm({
       title: b.title || '',
       subtitle: b.subtitle || '',
+      device_type: b.device_type || 'all',
       image_url: b.image_url || '',
+      image_mobile: b.image_mobile || '',
       link_url: b.link_url || '',
       button_text: b.button_text || '',
       sort_order: b.sort_order || 0,
@@ -187,20 +218,29 @@ export default function BannersManager() {
     }
   }
 
-  const handleBannerFileUpload = async (e) => {
+  const handleBannerFileUpload = async (e, field = 'image_url') => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
     try {
-      setUploadingBanner(true)
+      if (field === 'image_mobile') {
+        setUploadingMobileBanner(true)
+      } else {
+        setUploadingBanner(true)
+      }
+
       const res = await api.uploadPhotos(files, 'banners')
       if (res.success && res.files && res.files[0]) {
-        setBannerForm((prev) => ({ ...prev, image_url: res.files[0].url }))
+        setBannerForm((prev) => ({ ...prev, [field]: res.files[0].url }))
       }
     } catch (error) {
       alert('Tải ảnh thất bại: ' + error.message)
     } finally {
-      setUploadingBanner(false)
+      if (field === 'image_mobile') {
+        setUploadingMobileBanner(false)
+      } else {
+        setUploadingBanner(false)
+      }
     }
   }
 
@@ -281,7 +321,7 @@ export default function BannersManager() {
             Quản Lý Trang Chủ (Home Page)
           </h1>
           <p className="text-slate-500 text-xs mt-1">
-            Tùy biến Banner Slider và Section Giới Thiệu trên màn hình chính
+            Tùy biến Banner Slider (phân tách riêng PC & Mobile) và Section Giới Thiệu
           </p>
         </div>
 
@@ -301,7 +341,13 @@ export default function BannersManager() {
                 className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold shadow-md shadow-primary/25 hover:shadow-primary/40 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <Plus size={16} />
-                <span>Thêm Banner Mới</span>
+                <span>
+                  {deviceFilter === 'mobile'
+                    ? 'Thêm Banner Mobile Mới'
+                    : deviceFilter === 'pc'
+                    ? 'Thêm Banner PC Mới'
+                    : 'Thêm Banner Mới'}
+                </span>
               </button>
             </>
           ) : (
@@ -363,111 +409,219 @@ export default function BannersManager() {
       {/* ==================== TAB 1: BANNERS ==================== */}
       {activeTab === 'banners' && (
         <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Sub-Device Selector & Filter Tabs */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setDeviceFilter('all')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  deviceFilter === 'all'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Layers size={14} />
+                <span>Tất Cả</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 font-mono">
+                  {banners.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDeviceFilter('pc')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  deviceFilter === 'pc'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                }`}
+              >
+                <Monitor size={14} />
+                <span>Banner PC / Laptop (Ngang)</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-500 text-white font-mono">
+                  {pcBanners.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDeviceFilter('mobile')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  deviceFilter === 'mobile'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                }`}
+              >
+                <Smartphone size={14} />
+                <span>Banner Mobile / Di Động (Dọc)</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-500 text-white font-mono">
+                  {mobileBanners.length}
+                </span>
+              </button>
+            </div>
+
+            <div className="text-[11px] text-slate-500 font-medium px-2">
+              {deviceFilter === 'pc' && '🖥️ Đang hiển thị các banner dành cho máy tính (16:9)'}
+              {deviceFilter === 'mobile' && '📱 Đang hiển thị các banner dành riêng cho điện thoại (dọc 9:16 / 4:5)'}
+              {deviceFilter === 'all' && '🌐 Hiển thị tất cả cấu hình banner hiện có'}
+            </div>
+          </div>
+
           {loadingBanners ? (
             <div className="p-16 text-center text-slate-400 text-xs flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
               <span>Đang tải danh sách banner...</span>
             </div>
-          ) : banners.length > 0 ? (
+          ) : filteredBanners.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {banners.map((b) => (
-                <div
-                  key={b.id}
-                  className={`bg-white border rounded-3xl overflow-hidden transition-all duration-300 flex flex-col group shadow-xs ${
-                    b.is_active
-                      ? 'border-slate-200/90 hover:border-slate-300 hover:shadow-md'
-                      : 'border-slate-200 opacity-60'
-                  }`}
-                >
-                  {/* Image Preview */}
-                  <div className="relative aspect-[16/9] w-full bg-slate-100 overflow-hidden">
-                    <img
-                      src={b.image_url}
-                      alt={b.title || 'Banner'}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent pointer-events-none" />
+              {filteredBanners.map((b) => {
+                const isMobileBanner = b.device_type === 'mobile'
+                const isAllBanner = b.device_type === 'all' || !b.device_type
 
-                    {/* Status Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span
-                        className={`px-2.5 py-0.8 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ${
-                          b.is_active
-                            ? 'bg-emerald-500/90 text-white shadow-xs'
-                            : 'bg-slate-800/80 text-slate-300 border border-slate-700'
+                return (
+                  <div
+                    key={b.id}
+                    className={`bg-white border rounded-3xl overflow-hidden transition-all duration-300 flex flex-col group shadow-xs ${
+                      b.is_active
+                        ? 'border-slate-200/90 hover:border-slate-300 hover:shadow-md'
+                        : 'border-slate-200 opacity-60'
+                    }`}
+                  >
+                    {/* Image Preview Container */}
+                    <div
+                      className={`relative w-full overflow-hidden flex items-center justify-center ${
+                        isMobileBanner
+                          ? 'aspect-[9/16] max-h-72 bg-slate-950'
+                          : 'aspect-[16/9] bg-slate-100'
+                      }`}
+                    >
+                      <img
+                        src={
+                          isMobileBanner && b.image_mobile
+                            ? b.image_mobile
+                            : b.image_url
+                        }
+                        alt={b.title || 'Banner'}
+                        className={`transition-transform duration-500 group-hover:scale-105 ${
+                          isMobileBanner
+                            ? 'h-full w-auto max-w-full object-contain'
+                            : 'w-full h-full object-cover'
                         }`}
-                      >
-                        {b.is_active ? 'Đang Hiển Thị' : 'Đang Ẩn'}
-                      </span>
-                      <span className="px-2 py-0.8 rounded-full text-[10px] font-mono bg-black/60 text-white backdrop-blur-md">
-                        Thứ tự: #{b.sort_order}
-                      </span>
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent pointer-events-none" />
+
+                      {/* Top Badges */}
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Device Type Badge */}
+                          {isMobileBanner ? (
+                            <span className="px-2.5 py-0.8 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md bg-purple-600/95 text-white flex items-center gap-1 shadow-xs">
+                              <Smartphone size={11} /> Mobile
+                            </span>
+                          ) : isAllBanner ? (
+                            <span className="px-2.5 py-0.8 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md bg-amber-600/95 text-white flex items-center gap-1 shadow-xs">
+                              <Layers size={11} /> PC & Mobile
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.8 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md bg-blue-600/95 text-white flex items-center gap-1 shadow-xs">
+                              <Monitor size={11} /> PC
+                            </span>
+                          )}
+
+                          {/* Status Badge */}
+                          <span
+                            className={`px-2 py-0.8 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ${
+                              b.is_active
+                                ? 'bg-emerald-500/90 text-white shadow-xs'
+                                : 'bg-slate-800/80 text-slate-300 border border-slate-700'
+                            }`}
+                          >
+                            {b.is_active ? 'Hiển Thị' : 'Ẩn'}
+                          </span>
+                        </div>
+
+                        <span className="px-2 py-0.8 rounded-full text-[10px] font-mono bg-black/60 text-white backdrop-blur-md shrink-0">
+                          #{b.sort_order}
+                        </span>
+                      </div>
+
+                      {/* Banner Text Overlay Preview */}
+                      <div className="absolute bottom-3 left-4 right-4 pointer-events-none">
+                        <h3 className="font-heading font-bold text-sm text-white line-clamp-1 drop-shadow-sm">
+                          {b.title || 'Không có tiêu đề'}
+                        </h3>
+                        <p className="text-[11px] text-slate-200 line-clamp-1 mt-0.5 drop-shadow-sm">
+                          {b.subtitle || 'Không có phụ đề'}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Banner Text Overlay Preview */}
-                    <div className="absolute bottom-3 left-4 right-4">
-                      <h3 className="font-heading font-bold text-sm text-white line-clamp-1 drop-shadow-sm">
-                        {b.title || 'Không có tiêu đề'}
-                      </h3>
-                      <p className="text-[11px] text-slate-200 line-clamp-1 mt-0.5 drop-shadow-sm">
-                        {b.subtitle || 'Không có phụ đề'}
-                      </p>
+                    {/* Card Footer Actions */}
+                    <div className="p-3.5 sm:p-4 bg-white flex items-center justify-between border-t border-slate-100 text-xs mt-auto">
+                      <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
+                        <span>
+                          Thứ tự:{' '}
+                          <strong className="text-slate-800 font-mono">#{b.sort_order}</strong>
+                        </span>
+                        {b.image_mobile && b.device_type === 'all' && (
+                          <span className="text-purple-600 font-semibold" title="Có riêng ảnh mobile">
+                            • Có ảnh Mobile
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleActive(b.id, b.is_active)}
+                          title={b.is_active ? 'Ẩn banner' : 'Hiển thị banner'}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                            b.is_active
+                              ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-400'
+                          }`}
+                        >
+                          {b.is_active ? <Eye size={15} /> : <EyeOff size={15} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(b)}
+                          title="Chỉnh sửa banner"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                        >
+                          <Edit2 size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBanner(b.id)}
+                          title="Xóa banner"
+                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Card Footer Actions */}
-                  <div className="p-4 bg-white flex items-center justify-between border-t border-slate-100 text-xs">
-                    <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
-                      <span>
-                        Vị trí:{' '}
-                        <strong className="text-slate-800 font-mono">#{b.sort_order}</strong>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleActive(b.id, b.is_active)}
-                        title={b.is_active ? 'Ẩn banner' : 'Hiển thị banner'}
-                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                          b.is_active
-                            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-400'
-                        }`}
-                      >
-                        {b.is_active ? <Eye size={15} /> : <EyeOff size={15} />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditModal(b)}
-                        title="Chỉnh sửa"
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-                      >
-                        <Edit2 size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteBanner(b.id)}
-                        title="Xóa banner"
-                        className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="text-center py-20 bg-white border border-slate-200/90 rounded-3xl shadow-sm">
               <ImageIcon className="mx-auto text-slate-400 mb-3" size={40} />
-              <p className="text-slate-500 text-sm">Chưa có banner nào được tạo.</p>
+              <p className="text-slate-500 text-sm">
+                {deviceFilter === 'mobile'
+                  ? 'Chưa có banner nào dành riêng cho Mobile.'
+                  : deviceFilter === 'pc'
+                  ? 'Chưa có banner nào dành cho PC.'
+                  : 'Chưa có banner nào được tạo.'}
+              </p>
               <button
                 type="button"
                 onClick={handleOpenCreateModal}
                 className="mt-4 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold shadow-sm cursor-pointer"
               >
-                Tạo Banner Đầu Tiên
+                {deviceFilter === 'mobile' ? '+ Thêm Banner Mobile Đầu Tiên' : '+ Tạo Banner Mới'}
               </button>
             </div>
           )}
@@ -563,15 +717,15 @@ export default function BannersManager() {
                       onChange={(e) =>
                         setIntroForm({ ...introForm, home_intro_p1: e.target.value })
                       }
-                      placeholder="Nhập thông điệp cốt lõi và ý nghĩa dịch vụ..."
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary leading-relaxed"
+                      placeholder="Nhập đoạn văn mở đầu..."
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary leading-relaxed"
                     />
                   </div>
 
                   {/* Paragraph 2 */}
                   <div>
                     <label className="block text-slate-700 font-semibold mb-1.5">
-                      Đoạn Mô Tả Chi Tiết (Paragraph 2)
+                      Đoạn Chi Tiết (Paragraph 2)
                     </label>
                     <textarea
                       rows={3}
@@ -579,44 +733,38 @@ export default function BannersManager() {
                       onChange={(e) =>
                         setIntroForm({ ...introForm, home_intro_p2: e.target.value })
                       }
-                      placeholder="Nhập kinh nghiệm, sự an tâm và cam kết của studio..."
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary leading-relaxed"
+                      placeholder="Nhập đoạn văn chi tiết..."
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary leading-relaxed"
                     />
                   </div>
 
-                  {/* Dynamic Checklist Features */}
-                  <div className="p-4 rounded-2xl bg-orange-50/40 border border-orange-200/70 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs">
-                        <CheckCircle2 size={16} className="text-primary" />
-                        <span>Các Điểm Nổi Bật / Cam Kết (Checklist)</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-orange-200/60 text-primary font-mono font-bold">
-                          {introFeatures.length}
-                        </span>
-                      </div>
-
+                  {/* Features List */}
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-slate-700 font-semibold">
+                        4 Điểm Nổi Bật / Cam Kết Studio
+                      </label>
                       <button
                         type="button"
                         onClick={handleAddFeature}
-                        className="px-3 py-1.5 rounded-xl bg-white hover:bg-orange-100/60 text-primary font-bold text-xs border border-orange-300/80 shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        className="text-primary hover:text-primary-dark font-semibold flex items-center gap-1 cursor-pointer"
                       >
-                        <Plus size={14} />
-                        <span>Thêm Điểm Mới</span>
+                        <Plus size={14} /> Thêm Điểm Mới
                       </button>
                     </div>
 
                     {introFeatures.length > 0 ? (
-                      <div className="space-y-2 pt-1">
+                      <div className="space-y-2">
                         {introFeatures.map((feat, idx) => (
                           <div key={idx} className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-lg bg-orange-100 text-primary text-[11px] font-bold flex items-center justify-center shrink-0">
+                            <span className="w-5 text-center font-mono text-slate-400 font-semibold">
                               #{idx + 1}
                             </span>
                             <input
                               type="text"
                               value={feat}
                               onChange={(e) => handleUpdateFeature(idx, e.target.value)}
-                              placeholder={`Nhập điểm nổi bật / cam kết thứ ${idx + 1}...`}
+                              placeholder={`Cam kết hoặc điểm mạnh thứ ${idx + 1}...`}
                               className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-primary shadow-2xs"
                             />
                             <button
@@ -702,11 +850,11 @@ export default function BannersManager() {
 
       {/* Modal Add / Edit Banner */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95">
             <button
               onClick={() => setModalOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1 rounded-xl hover:bg-slate-100 cursor-pointer"
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -715,33 +863,127 @@ export default function BannersManager() {
               {editingBanner ? 'Chỉnh Sửa Banner' : 'Thêm Banner Slider Mới'}
             </h3>
             <p className="text-slate-500 text-xs mb-6">
-              Điền thông tin và tải ảnh độ phân giải cao cho slider trang chủ
+              Cấu hình hình ảnh riêng cho máy tính (PC) hoặc thiết bị di động (Mobile)
             </p>
 
-            <form onSubmit={handleBannerSubmit} className="space-y-4 text-xs">
-              {/* Image Uploader & URL */}
+            <form onSubmit={handleBannerSubmit} className="space-y-5 text-xs">
+              {/* 1. Device Type Selector */}
               <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">
-                  Ảnh Banner (Khuyến nghị 1920x1080 hoặc 2560x1440)
+                <label className="block text-slate-800 font-bold mb-2">
+                  Thiết Bị Hiển Thị Áp Dụng:
                 </label>
-                <div className="flex gap-2 mb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setBannerForm({ ...bannerForm, device_type: 'pc' })}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      bannerForm.device_type === 'pc'
+                        ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20 text-blue-950'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                          bannerForm.device_type === 'pc'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        <Monitor size={15} />
+                      </div>
+                      <span className="font-bold text-xs">Máy Tính (PC)</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 leading-tight">
+                      Ảnh ngang tỉ lệ 16:9 (1920x1080)
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBannerForm({ ...bannerForm, device_type: 'mobile' })}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      bannerForm.device_type === 'mobile'
+                        ? 'border-purple-500 bg-purple-50/60 ring-2 ring-purple-500/20 text-purple-950'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                          bannerForm.device_type === 'mobile'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        <Smartphone size={15} />
+                      </div>
+                      <span className="font-bold text-xs">Di Động (Mobile)</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 leading-tight">
+                      Ảnh dọc tỉ lệ 9:16 (1080x1920) hoặc 4:5
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBannerForm({ ...bannerForm, device_type: 'all' })}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      bannerForm.device_type === 'all'
+                        ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20 text-amber-950'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                          bannerForm.device_type === 'all'
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        <Layers size={15} />
+                      </div>
+                      <span className="font-bold text-xs">Cả PC & Mobile</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 leading-tight">
+                      Dùng chung cho mọi thiết bị
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Primary Image (PC or Mobile depending on type) */}
+              <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-slate-800 font-bold">
+                    {bannerForm.device_type === 'mobile'
+                      ? '📱 Ảnh Banner Dành Cho Mobile (Khuyến nghị 1080x1920 hoặc 1080x1350)'
+                      : bannerForm.device_type === 'pc'
+                      ? '🖥️ Ảnh Banner Dành Cho PC (Khuyến nghị 1920x1080 hoặc 2560x1440)'
+                      : '🖼️ Ảnh Banner Chính (Khuyến nghị 1920x1080)'}
+                  </label>
+                  <span className="text-[11px] text-slate-500 font-mono">Bắt buộc</span>
+                </div>
+
+                <div className="flex gap-2">
                   <input
                     type="text"
                     required
-                    placeholder="Nhập đường dẫn ảnh hoặc tải ảnh từ máy tính..."
+                    placeholder="Nhập đường dẫn ảnh hoặc bấm chọn file..."
                     value={bannerForm.image_url}
                     onChange={(e) =>
                       setBannerForm({ ...bannerForm, image_url: e.target.value })
                     }
-                    className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary"
+                    className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-primary text-xs shadow-2xs"
                   />
-                  <label className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors border border-slate-200 font-medium">
+                  <label className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors border border-slate-200 font-medium text-xs shadow-2xs">
                     <Upload size={14} />
-                    <span>{uploadingBanner ? 'Đang tải...' : 'Chọn file'}</span>
+                    <span>{uploadingBanner ? 'Đang tải...' : 'Tải ảnh lên'}</span>
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleBannerFileUpload}
+                      onChange={(e) => handleBannerFileUpload(e, 'image_url')}
                       disabled={uploadingBanner}
                       className="hidden"
                     />
@@ -750,78 +992,137 @@ export default function BannersManager() {
 
                 {/* Preview Image */}
                 {bannerForm.image_url && (
-                  <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 mt-2">
+                  <div
+                    className={`relative rounded-xl overflow-hidden border border-slate-200 bg-slate-950 flex items-center justify-center ${
+                      bannerForm.device_type === 'mobile'
+                        ? 'aspect-[9/16] max-h-64 mx-auto w-auto'
+                        : 'aspect-[16/9] w-full'
+                    }`}
+                  >
                     <img
                       src={bannerForm.image_url}
                       alt="Preview"
-                      className="w-full h-full object-cover"
+                      className={`h-full ${
+                        bannerForm.device_type === 'mobile'
+                          ? 'w-auto object-contain'
+                          : 'w-full object-cover'
+                      }`}
                     />
                   </div>
                 )}
               </div>
 
+              {/* 3. Optional Mobile Image when "all" is selected */}
+              {bannerForm.device_type === 'all' && (
+                <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-200/60 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-purple-950 font-bold">
+                      📱 Ảnh Banner Riêng Cho Mobile (Tùy chọn)
+                    </label>
+                    <span className="text-[11px] text-purple-600 font-medium">
+                      Nếu để trống sẽ dùng ảnh chính ở trên
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Dán đường dẫn ảnh dọc riêng cho điện thoại..."
+                      value={bannerForm.image_mobile}
+                      onChange={(e) =>
+                        setBannerForm({ ...bannerForm, image_mobile: e.target.value })
+                      }
+                      className="flex-1 px-3 py-2 bg-white border border-purple-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 text-xs shadow-2xs"
+                    />
+                    <label className="px-3.5 py-2 bg-white hover:bg-purple-100 text-purple-700 rounded-xl cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors border border-purple-200 font-medium text-xs shadow-2xs">
+                      <Upload size={14} />
+                      <span>{uploadingMobileBanner ? 'Đang tải...' : 'Tải ảnh mobile'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleBannerFileUpload(e, 'image_mobile')}
+                        disabled={uploadingMobileBanner}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {bannerForm.image_mobile && (
+                    <div className="relative aspect-[9/16] max-h-56 mx-auto rounded-xl overflow-hidden border border-purple-200 bg-slate-950 flex items-center justify-center">
+                      <img
+                        src={bannerForm.image_mobile}
+                        alt="Mobile Preview"
+                        className="h-full w-auto object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Title & Subtitle */}
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">
-                  Tiêu Đề Banner (Tùy chọn)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Nhập tiêu đề chính của banner..."
-                  value={bannerForm.title}
-                  onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">
-                  Mô Tả Phụ / Slogan
-                </label>
-                <input
-                  type="text"
-                  placeholder="Nhập phụ đề hoặc thông điệp của banner..."
-                  value={bannerForm.subtitle}
-                  onChange={(e) =>
-                    setBannerForm({ ...bannerForm, subtitle: e.target.value })
-                  }
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              {/* Sort order */}
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">
-                  Thứ Tự Ưu Tiên (Số nhỏ hơn hiển thị trước)
-                </label>
-                <input
-                  type="number"
-                  value={bannerForm.sort_order}
-                  onChange={(e) =>
-                    setBannerForm({
-                      ...bannerForm,
-                      sort_order: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              {/* Active Toggle */}
-              <div className="pt-2">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">
+                    Tiêu Đề Banner (Tùy chọn)
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={bannerForm.is_active}
-                    onChange={(e) =>
-                      setBannerForm({ ...bannerForm, is_active: e.target.checked })
-                    }
-                    className="w-4 h-4 rounded text-primary focus:ring-primary bg-white border-slate-300"
+                    type="text"
+                    placeholder="Nhập tiêu đề chính..."
+                    value={bannerForm.title}
+                    onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary"
                   />
-                  <span className="text-slate-700 font-medium">
-                    Bật hiển thị trên trang chủ ngay
-                  </span>
-                </label>
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">
+                    Mô Tả Phụ / Slogan (Tùy chọn)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Nhập slogan ngắn..."
+                    value={bannerForm.subtitle}
+                    onChange={(e) =>
+                      setBannerForm({ ...bannerForm, subtitle: e.target.value })
+                    }
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Sort order & Active toggle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">
+                    Thứ Tự Ưu Tiên (Số nhỏ hơn hiển thị trước)
+                  </label>
+                  <input
+                    type="number"
+                    value={bannerForm.sort_order}
+                    onChange={(e) =>
+                      setBannerForm({
+                        ...bannerForm,
+                        sort_order: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="pt-5">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={bannerForm.is_active}
+                      onChange={(e) =>
+                        setBannerForm({ ...bannerForm, is_active: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded text-primary focus:ring-primary bg-white border-slate-300"
+                    />
+                    <span className="text-slate-700 font-semibold">
+                      Bật hiển thị ngay trên trang chủ
+                    </span>
+                  </label>
+                </div>
               </div>
 
               {/* Actions */}
@@ -835,7 +1136,7 @@ export default function BannersManager() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-semibold shadow-md shadow-primary/25 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-semibold shadow-md shadow-primary/25 cursor-pointer"
                 >
                   {editingBanner ? 'Cập Nhật Banner' : 'Tạo Banner'}
                 </button>

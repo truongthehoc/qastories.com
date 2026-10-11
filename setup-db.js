@@ -110,8 +110,15 @@ async function setupDatabase() {
       if (!colNames.includes('status')) {
         await connection.query(`ALTER TABLE admins ADD COLUMN status ENUM('active', 'inactive') DEFAULT 'active' AFTER permissions`)
       }
-      if (!colNames.includes('avatar')) {
-        await connection.query(`ALTER TABLE admins ADD COLUMN avatar VARCHAR(500) NULL AFTER status`)
+    // Đảm bảo nâng cấp cột cho bảng banners nếu thiếu
+    try {
+      const [bannerCols] = await connection.query(`SHOW COLUMNS FROM banners`)
+      const colNames = bannerCols.map(c => c.Field)
+      if (!colNames.includes('device_type')) {
+        await connection.query(`ALTER TABLE banners ADD COLUMN device_type VARCHAR(20) DEFAULT 'all' AFTER subtitle`)
+      }
+      if (!colNames.includes('image_mobile')) {
+        await connection.query(`ALTER TABLE banners ADD COLUMN image_mobile VARCHAR(500) NULL AFTER image_url`)
       }
     } catch (e) {
       // Ignore
