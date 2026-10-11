@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Monitor,
   Smartphone,
+  ArrowRightLeft,
 } from 'lucide-react'
 import api from '../../utils/api'
 import { useSettings } from '../../context/SettingsContext'
@@ -23,7 +24,7 @@ import { useSettings } from '../../context/SettingsContext'
 export default function BannersManager() {
   const { settings, refreshSettings } = useSettings()
   const [activeTab, setActiveTab] = useState('banners') // 'banners' | 'intro'
-  const [deviceFilter, setDeviceFilter] = useState('all') // 'all' | 'pc' | 'mobile'
+  const [previewMode, setPreviewMode] = useState('pc') // 'pc' | 'mobile'
 
   // --- Banner State ---
   const [banners, setBanners] = useState([])
@@ -33,10 +34,13 @@ export default function BannersManager() {
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const [uploadingMobileBanner, setUploadingMobileBanner] = useState(false)
 
+  // Card view toggles (allow switching PC/Mobile preview per card)
+  const [cardPreviewModes, setCardPreviewModes] = useState({})
+
   const [bannerForm, setBannerForm] = useState({
     title: '',
     subtitle: '',
-    device_type: 'pc', // 'pc' | 'mobile' | 'all'
+    device_type: 'all', // 'all' | 'pc' | 'mobile'
     image_url: '',
     image_mobile: '',
     link_url: '',
@@ -93,25 +97,11 @@ export default function BannersManager() {
     }
   }
 
-  // Phân loại danh sách banner theo thiết bị
-  const pcBanners = useMemo(
-    () => banners.filter((b) => b.device_type === 'pc' || b.device_type === 'all' || !b.device_type),
+  // Đếm số lượng banner đã có ảnh mobile riêng
+  const mobileCustomCount = useMemo(
+    () => banners.filter((b) => !!b.image_mobile).length,
     [banners]
   )
-  const mobileBanners = useMemo(
-    () => banners.filter((b) => b.device_type === 'mobile' || b.device_type === 'all'),
-    [banners]
-  )
-
-  const filteredBanners = useMemo(() => {
-    if (deviceFilter === 'pc') {
-      return banners.filter((b) => b.device_type === 'pc' || b.device_type === 'all' || !b.device_type)
-    }
-    if (deviceFilter === 'mobile') {
-      return banners.filter((b) => b.device_type === 'mobile' || b.device_type === 'all')
-    }
-    return banners
-  }, [banners, deviceFilter])
 
   // Load Intro Settings
   const syncIntroForm = (data) => {
@@ -168,11 +158,10 @@ export default function BannersManager() {
   // --- Banner Actions ---
   const handleOpenCreateModal = () => {
     setEditingBanner(null)
-    const initialDevice = deviceFilter === 'mobile' ? 'mobile' : 'pc'
     setBannerForm({
       title: '',
       subtitle: '',
-      device_type: initialDevice,
+      device_type: 'all',
       image_url: '',
       image_mobile: '',
       link_url: '',
@@ -247,7 +236,7 @@ export default function BannersManager() {
   const handleBannerSubmit = async (e) => {
     e.preventDefault()
     if (!bannerForm.image_url) {
-      alert('Vui lòng chọn hoặc nhập đường dẫn ảnh banner!')
+      alert('Vui lòng chọn hoặc nhập đường dẫn ảnh banner PC!')
       return
     }
 
@@ -262,6 +251,17 @@ export default function BannersManager() {
     } catch (error) {
       alert('Lỗi: ' + error.message)
     }
+  }
+
+  // Toggle preview mode for a specific card
+  const toggleCardPreview = (bannerId) => {
+    setCardPreviewModes((prev) => {
+      const current = prev[bannerId] || previewMode
+      return {
+        ...prev,
+        [bannerId]: current === 'pc' ? 'mobile' : 'pc',
+      }
+    })
   }
 
   // --- Intro Actions ---
@@ -321,7 +321,7 @@ export default function BannersManager() {
             Quản Lý Trang Chủ (Home Page)
           </h1>
           <p className="text-slate-500 text-xs mt-1">
-            Tùy biến Banner Slider (phân tách riêng PC & Mobile) và Section Giới Thiệu
+            Tùy biến Banner Slider (hỗ trợ ảnh riêng theo tỉ lệ Mobile) và Section Giới Thiệu
           </p>
         </div>
 
@@ -341,13 +341,7 @@ export default function BannersManager() {
                 className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold shadow-md shadow-primary/25 hover:shadow-primary/40 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <Plus size={16} />
-                <span>
-                  {deviceFilter === 'mobile'
-                    ? 'Thêm Banner Mobile Mới'
-                    : deviceFilter === 'pc'
-                    ? 'Thêm Banner PC Mới'
-                    : 'Thêm Banner Mới'}
-                </span>
+                <span>Thêm Banner Mới</span>
               </button>
             </>
           ) : (
@@ -409,62 +403,48 @@ export default function BannersManager() {
       {/* ==================== TAB 1: BANNERS ==================== */}
       {activeTab === 'banners' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Sub-Device Selector & Filter Tabs */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-xs">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setDeviceFilter('all')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  deviceFilter === 'all'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                <Layers size={14} />
-                <span>Tất Cả</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 font-mono">
-                  {banners.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setDeviceFilter('pc')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  deviceFilter === 'pc'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                }`}
-              >
-                <Monitor size={14} />
-                <span>Banner PC / Laptop (Ngang)</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-500 text-white font-mono">
-                  {pcBanners.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setDeviceFilter('mobile')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  deviceFilter === 'mobile'
-                    ? 'bg-purple-600 text-white shadow-xs'
-                    : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
-                }`}
-              >
-                <Smartphone size={14} />
-                <span>Banner Mobile / Di Động (Dọc)</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-500 text-white font-mono">
-                  {mobileBanners.length}
-                </span>
-              </button>
+          {/* Top Bar: Preview Mode Switcher & Stats */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-700">Chế độ xem trước danh sách:</span>
+              <div className="flex items-center p-1 bg-slate-100 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode('pc')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    previewMode === 'pc'
+                      ? 'bg-white text-blue-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Monitor size={14} />
+                  <span>🖥️ Giao Diện PC (16:9)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode('mobile')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    previewMode === 'mobile'
+                      ? 'bg-white text-purple-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Smartphone size={14} />
+                  <span>📱 Giao Diện Mobile (Dọc)</span>
+                </button>
+              </div>
             </div>
 
-            <div className="text-[11px] text-slate-500 font-medium px-2">
-              {deviceFilter === 'pc' && '🖥️ Đang hiển thị các banner dành cho máy tính (16:9)'}
-              {deviceFilter === 'mobile' && '📱 Đang hiển thị các banner dành riêng cho điện thoại (dọc 9:16 / 4:5)'}
-              {deviceFilter === 'all' && '🌐 Hiển thị tất cả cấu hình banner hiện có'}
+            <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                Tổng: <strong className="text-slate-800 font-mono">{banners.length}</strong> banner
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1 text-purple-700 font-semibold">
+                <Smartphone size={12} />
+                Đã có ảnh Mobile riêng: <strong className="font-mono">{mobileCustomCount}</strong>
+              </span>
             </div>
           </div>
 
@@ -473,11 +453,17 @@ export default function BannersManager() {
               <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
               <span>Đang tải danh sách banner...</span>
             </div>
-          ) : filteredBanners.length > 0 ? (
+          ) : banners.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredBanners.map((b) => {
-                const isMobileBanner = b.device_type === 'mobile'
-                const isAllBanner = b.device_type === 'all' || !b.device_type
+              {banners.map((b) => {
+                const currentMode = cardPreviewModes[b.id] || previewMode
+                const isViewingMobile = currentMode === 'mobile'
+                const hasCustomMobileImage = !!b.image_mobile
+
+                // Ảnh sẽ hiển thị cho card hiện tại
+                const displayImage = isViewingMobile
+                  ? b.image_mobile || b.image_url
+                  : b.image_url
 
                 return (
                   <div
@@ -490,21 +476,17 @@ export default function BannersManager() {
                   >
                     {/* Image Preview Container */}
                     <div
-                      className={`relative w-full overflow-hidden flex items-center justify-center ${
-                        isMobileBanner
+                      className={`relative w-full overflow-hidden flex items-center justify-center transition-all duration-300 ${
+                        isViewingMobile
                           ? 'aspect-[9/16] max-h-72 bg-slate-950'
                           : 'aspect-[16/9] bg-slate-100'
                       }`}
                     >
                       <img
-                        src={
-                          isMobileBanner && b.image_mobile
-                            ? b.image_mobile
-                            : b.image_url
-                        }
+                        src={displayImage}
                         alt={b.title || 'Banner'}
                         className={`transition-transform duration-500 group-hover:scale-105 ${
-                          isMobileBanner
+                          isViewingMobile
                             ? 'h-full w-auto max-w-full object-contain'
                             : 'w-full h-full object-cover'
                         }`}
@@ -512,24 +494,9 @@ export default function BannersManager() {
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent pointer-events-none" />
 
                       {/* Top Badges */}
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {/* Device Type Badge */}
-                          {isMobileBanner ? (
-                            <span className="px-2.5 py-0.8 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md bg-purple-600/95 text-white flex items-center gap-1 shadow-xs">
-                              <Smartphone size={11} /> Mobile
-                            </span>
-                          ) : isAllBanner ? (
-                            <span className="px-2.5 py-0.8 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md bg-amber-600/95 text-white flex items-center gap-1 shadow-xs">
-                              <Layers size={11} /> PC & Mobile
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-0.8 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md bg-blue-600/95 text-white flex items-center gap-1 shadow-xs">
-                              <Monitor size={11} /> PC
-                            </span>
-                          )}
-
-                          {/* Status Badge */}
+                          {/* Active / Inactive Badge */}
                           <span
                             className={`px-2 py-0.8 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ${
                               b.is_active
@@ -539,11 +506,35 @@ export default function BannersManager() {
                           >
                             {b.is_active ? 'Hiển Thị' : 'Ẩn'}
                           </span>
+
+                          {/* Mobile status indicator badge */}
+                          {hasCustomMobileImage ? (
+                            <span
+                              className="px-2 py-0.8 rounded-full text-[10px] font-bold tracking-wider backdrop-blur-md bg-purple-600/95 text-white flex items-center gap-1 shadow-xs"
+                              title="Đã tải ảnh riêng theo tỉ lệ dọc của Mobile"
+                            >
+                              <Smartphone size={10} /> Ảnh Mobile riêng
+                            </span>
+                          ) : (
+                            <span
+                              className="px-2 py-0.8 rounded-full text-[10px] font-medium tracking-wider backdrop-blur-md bg-black/60 text-slate-200 flex items-center gap-1"
+                              title="Đang dùng chung ảnh PC cho thiết bị di động"
+                            >
+                              <Smartphone size={10} /> Chung ảnh PC
+                            </span>
+                          )}
                         </div>
 
-                        <span className="px-2 py-0.8 rounded-full text-[10px] font-mono bg-black/60 text-white backdrop-blur-md shrink-0">
-                          #{b.sort_order}
-                        </span>
+                        {/* Switch preview button for this card */}
+                        <button
+                          type="button"
+                          onClick={() => toggleCardPreview(b.id)}
+                          className="px-2 py-1 rounded-full text-[10px] font-semibold bg-white/90 hover:bg-white text-slate-800 shadow-sm backdrop-blur-md flex items-center gap-1 cursor-pointer transition-all"
+                          title="Bấm để đổi chế độ xem PC hoặc Mobile cho banner này"
+                        >
+                          <ArrowRightLeft size={10} />
+                          <span>{isViewingMobile ? 'Xem PC' : 'Xem Mobile'}</span>
+                        </button>
                       </div>
 
                       {/* Banner Text Overlay Preview */}
@@ -561,14 +552,17 @@ export default function BannersManager() {
                     <div className="p-3.5 sm:p-4 bg-white flex items-center justify-between border-t border-slate-100 text-xs mt-auto">
                       <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
                         <span>
-                          Thứ tự:{' '}
+                          Vị trí:{' '}
                           <strong className="text-slate-800 font-mono">#{b.sort_order}</strong>
                         </span>
-                        {b.image_mobile && b.device_type === 'all' && (
-                          <span className="text-purple-600 font-semibold" title="Có riêng ảnh mobile">
-                            • Có ảnh Mobile
-                          </span>
-                        )}
+                        <span>•</span>
+                        <span className="text-slate-400 font-mono">
+                          {isViewingMobile
+                            ? hasCustomMobileImage
+                              ? 'Hiển thị: Ảnh dọc Mobile'
+                              : 'Hiển thị: Ảnh PC (Chung)'
+                            : 'Hiển thị: Ảnh PC (16:9)'}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-1">
@@ -609,19 +603,13 @@ export default function BannersManager() {
           ) : (
             <div className="text-center py-20 bg-white border border-slate-200/90 rounded-3xl shadow-sm">
               <ImageIcon className="mx-auto text-slate-400 mb-3" size={40} />
-              <p className="text-slate-500 text-sm">
-                {deviceFilter === 'mobile'
-                  ? 'Chưa có banner nào dành riêng cho Mobile.'
-                  : deviceFilter === 'pc'
-                  ? 'Chưa có banner nào dành cho PC.'
-                  : 'Chưa có banner nào được tạo.'}
-              </p>
+              <p className="text-slate-500 text-sm">Chưa có banner nào được tạo.</p>
               <button
                 type="button"
                 onClick={handleOpenCreateModal}
                 className="mt-4 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold shadow-sm cursor-pointer"
               >
-                {deviceFilter === 'mobile' ? '+ Thêm Banner Mobile Đầu Tiên' : '+ Tạo Banner Mới'}
+                + Tạo Banner Đầu Tiên
               </button>
             </div>
           )}
@@ -863,114 +851,33 @@ export default function BannersManager() {
               {editingBanner ? 'Chỉnh Sửa Banner' : 'Thêm Banner Slider Mới'}
             </h3>
             <p className="text-slate-500 text-xs mb-6">
-              Cấu hình hình ảnh riêng cho máy tính (PC) hoặc thiết bị di động (Mobile)
+              Tải ảnh chuẩn tỉ lệ cho PC và tùy chọn tải ảnh riêng theo tỉ lệ dọc của Mobile
             </p>
 
             <form onSubmit={handleBannerSubmit} className="space-y-5 text-xs">
-              {/* 1. Device Type Selector */}
-              <div>
-                <label className="block text-slate-800 font-bold mb-2">
-                  Thiết Bị Hiển Thị Áp Dụng:
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setBannerForm({ ...bannerForm, device_type: 'pc' })}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      bannerForm.device_type === 'pc'
-                        ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20 text-blue-950'
-                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                          bannerForm.device_type === 'pc'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        <Monitor size={15} />
-                      </div>
-                      <span className="font-bold text-xs">Máy Tính (PC)</span>
-                    </div>
-                    <span className="text-[11px] text-slate-500 leading-tight">
-                      Ảnh ngang tỉ lệ 16:9 (1920x1080)
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setBannerForm({ ...bannerForm, device_type: 'mobile' })}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      bannerForm.device_type === 'mobile'
-                        ? 'border-purple-500 bg-purple-50/60 ring-2 ring-purple-500/20 text-purple-950'
-                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                          bannerForm.device_type === 'mobile'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        <Smartphone size={15} />
-                      </div>
-                      <span className="font-bold text-xs">Di Động (Mobile)</span>
-                    </div>
-                    <span className="text-[11px] text-slate-500 leading-tight">
-                      Ảnh dọc tỉ lệ 9:16 (1080x1920) hoặc 4:5
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setBannerForm({ ...bannerForm, device_type: 'all' })}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      bannerForm.device_type === 'all'
-                        ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20 text-amber-950'
-                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                          bannerForm.device_type === 'all'
-                            ? 'bg-amber-600 text-white'
-                            : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        <Layers size={15} />
-                      </div>
-                      <span className="font-bold text-xs">Cả PC & Mobile</span>
-                    </div>
-                    <span className="text-[11px] text-slate-500 leading-tight">
-                      Dùng chung cho mọi thiết bị
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 2. Primary Image (PC or Mobile depending on type) */}
-              <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+              {/* 1. Primary Image (PC & Mặc định cho Mobile) */}
+              <div className="p-4 bg-slate-50/90 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="block text-slate-800 font-bold">
-                    {bannerForm.device_type === 'mobile'
-                      ? '📱 Ảnh Banner Dành Cho Mobile (Khuyến nghị 1080x1920 hoặc 1080x1350)'
-                      : bannerForm.device_type === 'pc'
-                      ? '🖥️ Ảnh Banner Dành Cho PC (Khuyến nghị 1920x1080 hoặc 2560x1440)'
-                      : '🖼️ Ảnh Banner Chính (Khuyến nghị 1920x1080)'}
-                  </label>
-                  <span className="text-[11px] text-slate-500 font-mono">Bắt buộc</span>
+                  <div className="flex items-center gap-1.5">
+                    <Monitor className="text-blue-600" size={16} />
+                    <label className="block text-slate-900 font-bold text-xs">
+                      1. Ảnh Banner Cho PC / Máy Tính (Bắt buộc)
+                    </label>
+                  </div>
+                  <span className="text-[11px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                    Tỉ lệ 16:9 (1920x1080)
+                  </span>
                 </div>
+
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Ảnh này sẽ hiển thị trên màn hình máy tính. Nếu bạn không tải ảnh Mobile riêng ở bước 2 bên dưới, hệ thống sẽ tự động dùng ảnh này cho cả Mobile.
+                </p>
 
                 <div className="flex gap-2">
                   <input
                     type="text"
                     required
-                    placeholder="Nhập đường dẫn ảnh hoặc bấm chọn file..."
+                    placeholder="Nhập đường dẫn ảnh PC hoặc bấm nút tải..."
                     value={bannerForm.image_url}
                     onChange={(e) =>
                       setBannerForm({ ...bannerForm, image_url: e.target.value })
@@ -979,7 +886,7 @@ export default function BannersManager() {
                   />
                   <label className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors border border-slate-200 font-medium text-xs shadow-2xs">
                     <Upload size={14} />
-                    <span>{uploadingBanner ? 'Đang tải...' : 'Tải ảnh lên'}</span>
+                    <span>{uploadingBanner ? 'Đang tải...' : 'Tải ảnh PC'}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -990,74 +897,98 @@ export default function BannersManager() {
                   </label>
                 </div>
 
-                {/* Preview Image */}
+                {/* Preview Image PC */}
                 {bannerForm.image_url && (
-                  <div
-                    className={`relative rounded-xl overflow-hidden border border-slate-200 bg-slate-950 flex items-center justify-center ${
-                      bannerForm.device_type === 'mobile'
-                        ? 'aspect-[9/16] max-h-64 mx-auto w-auto'
-                        : 'aspect-[16/9] w-full'
-                    }`}
-                  >
+                  <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-900">
                     <img
                       src={bannerForm.image_url}
-                      alt="Preview"
-                      className={`h-full ${
-                        bannerForm.device_type === 'mobile'
-                          ? 'w-auto object-contain'
-                          : 'w-full object-cover'
-                      }`}
+                      alt="Preview PC"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                 )}
               </div>
 
-              {/* 3. Optional Mobile Image when "all" is selected */}
-              {bannerForm.device_type === 'all' && (
-                <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-200/60 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-purple-950 font-bold">
-                      📱 Ảnh Banner Riêng Cho Mobile (Tùy chọn)
+              {/* 2. Dedicated Mobile Image (Tùy chọn) */}
+              <div className="p-4 bg-purple-50/60 rounded-2xl border border-purple-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Smartphone className="text-purple-600" size={16} />
+                    <label className="block text-purple-950 font-bold text-xs">
+                      2. Ảnh Banner Dành Riêng Cho Mobile (Tùy chọn)
                     </label>
-                    <span className="text-[11px] text-purple-600 font-medium">
-                      Nếu để trống sẽ dùng ảnh chính ở trên
+                  </div>
+                  <span className="text-[11px] text-purple-700 font-semibold bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200">
+                    Tỉ lệ dọc 9:16 (1080x1920) hoặc 4:5
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-purple-800 leading-relaxed">
+                  {bannerForm.image_mobile ? (
+                    <span className="text-emerald-700 font-semibold">
+                      ✓ Đã có ảnh riêng theo tỉ lệ dọc của Mobile. Trên điện thoại sẽ ưu tiên hiển thị ảnh này.
                     </span>
-                  </div>
+                  ) : (
+                    <span>
+                      Để trống nếu bạn muốn <strong>sử dụng chung ảnh PC ở trên</strong>. Nếu tải ảnh riêng tại đây, hệ thống sẽ hiển thị theo đúng tỉ lệ dọc của Mobile để tránh bị cắt xén bố cục.
+                    </span>
+                  )}
+                </p>
 
-                  <div className="flex gap-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Dán link ảnh dọc cho Mobile hoặc bấm chọn file..."
+                    value={bannerForm.image_mobile}
+                    onChange={(e) =>
+                      setBannerForm({ ...bannerForm, image_mobile: e.target.value })
+                    }
+                    className="flex-1 px-3 py-2 bg-white border border-purple-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 text-xs shadow-2xs"
+                  />
+                  <label className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors font-medium text-xs shadow-xs">
+                    <Upload size={14} />
+                    <span>{uploadingMobileBanner ? 'Đang tải...' : 'Tải ảnh Mobile'}</span>
                     <input
-                      type="text"
-                      placeholder="Dán đường dẫn ảnh dọc riêng cho điện thoại..."
-                      value={bannerForm.image_mobile}
-                      onChange={(e) =>
-                        setBannerForm({ ...bannerForm, image_mobile: e.target.value })
-                      }
-                      className="flex-1 px-3 py-2 bg-white border border-purple-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 text-xs shadow-2xs"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleBannerFileUpload(e, 'image_mobile')}
+                      disabled={uploadingMobileBanner}
+                      className="hidden"
                     />
-                    <label className="px-3.5 py-2 bg-white hover:bg-purple-100 text-purple-700 rounded-xl cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors border border-purple-200 font-medium text-xs shadow-2xs">
-                      <Upload size={14} />
-                      <span>{uploadingMobileBanner ? 'Đang tải...' : 'Tải ảnh mobile'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleBannerFileUpload(e, 'image_mobile')}
-                        disabled={uploadingMobileBanner}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-
+                  </label>
                   {bannerForm.image_mobile && (
-                    <div className="relative aspect-[9/16] max-h-56 mx-auto rounded-xl overflow-hidden border border-purple-200 bg-slate-950 flex items-center justify-center">
-                      <img
-                        src={bannerForm.image_mobile}
-                        alt="Mobile Preview"
-                        className="h-full w-auto object-contain"
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBannerForm({ ...bannerForm, image_mobile: '' })}
+                      className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-semibold border border-rose-200 cursor-pointer"
+                      title="Xóa ảnh riêng để quay lại dùng chung ảnh PC"
+                    >
+                      Dùng chung ảnh PC
+                    </button>
                   )}
                 </div>
-              )}
+
+                {/* Preview Mobile Image */}
+                {bannerForm.image_mobile ? (
+                  <div className="relative aspect-[9/16] max-h-64 mx-auto rounded-2xl overflow-hidden border-2 border-purple-300 bg-slate-950 flex items-center justify-center shadow-md">
+                    <img
+                      src={bannerForm.image_mobile}
+                      alt="Mobile Preview"
+                      className="h-full w-auto object-contain"
+                    />
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] bg-purple-700 text-white font-bold backdrop-blur-md">
+                      Xem trước Mobile
+                    </div>
+                  </div>
+                ) : bannerForm.image_url ? (
+                  <div className="text-[11px] text-slate-500 bg-white/70 p-2.5 rounded-xl border border-purple-100 flex items-center gap-2">
+                    <Smartphone size={14} className="text-slate-400 shrink-0" />
+                    <span>
+                      Thiết bị di động hiện sẽ dùng chung ảnh của PC (hệ thống sẽ tự động căn giữa khung hình).
+                    </span>
+                  </div>
+                ) : null}
+              </div>
 
               {/* Title & Subtitle */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

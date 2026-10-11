@@ -75,32 +75,21 @@ export default function HeroSlider() {
     }
   }, [])
 
-  // Phân tách banner thông minh theo thiết bị (PC / Mobile)
+  // Phân tách banner theo thiết bị:
+  // - Trên Mobile: Sử dụng chung tất cả banner của PC, ưu tiên ảnh mobile riêng nếu có upload.
+  // - Nếu có banner chỉ định riêng device_type === 'pc', nó sẽ chỉ hiện trên PC.
+  // - Nếu có banner chỉ định riêng device_type === 'mobile', nó sẽ chỉ hiện trên Mobile.
   const displayedSlides = useMemo(() => {
     if (!slides || slides.length === 0) return defaultSlides
 
     if (isMobile) {
-      // 1. Ưu tiên các banner được cấu hình riêng cho Mobile
-      const mobileSpecific = slides.filter((s) => s.device_type === 'mobile')
-      if (mobileSpecific.length > 0) return mobileSpecific
-
-      // 2. Banner có riêng ảnh mobile hoặc chạy chung 'all'
-      const mobileUsable = slides.filter(
-        (s) => s.device_type === 'all' || s.image_mobile || !s.device_type
-      )
-      if (mobileUsable.length > 0) return mobileUsable
-
-      return slides
+      // Loại bỏ các banner chỉ định riêng chỉ cho PC
+      const mobileSlides = slides.filter((s) => s.device_type !== 'pc')
+      return mobileSlides.length > 0 ? mobileSlides : slides
     } else {
-      // 1. Ưu tiên các banner được cấu hình riêng cho PC
-      const pcSpecific = slides.filter((s) => s.device_type === 'pc')
-      if (pcSpecific.length > 0) return pcSpecific
-
-      // 2. Banner dùng chung cho cả 2 hoặc chưa set
-      const pcUsable = slides.filter((s) => s.device_type === 'all' || !s.device_type)
-      if (pcUsable.length > 0) return pcUsable
-
-      return slides
+      // Loại bỏ các banner chỉ định riêng chỉ cho Mobile
+      const pcSlides = slides.filter((s) => s.device_type !== 'mobile')
+      return pcSlides.length > 0 ? pcSlides : slides
     }
   }, [slides, isMobile])
 
@@ -128,7 +117,7 @@ export default function HeroSlider() {
           className="h-full w-full hero-swiper"
         >
           {displayedSlides.map((slide, idx) => {
-            // Nếu là mobile và có riêng ảnh mobile thì ưu tiên lấy image_mobile
+            // Trên Mobile: Nếu có ảnh mobile riêng thì dùng, nếu không thì dùng chung ảnh PC
             const rawUrl =
               isMobile && slide.image_mobile
                 ? slide.image_mobile
