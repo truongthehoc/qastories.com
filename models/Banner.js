@@ -6,7 +6,7 @@ export class Banner {
       const [cols] = await pool.query('SHOW COLUMNS FROM banners')
       const colNames = cols.map((c) => c.Field)
       if (!colNames.includes('device_type')) {
-        await pool.query("ALTER TABLE banners ADD COLUMN device_type VARCHAR(20) DEFAULT 'all' AFTER subtitle")
+        await pool.query("ALTER TABLE banners ADD COLUMN device_type VARCHAR(20) DEFAULT 'pc' AFTER subtitle")
       }
       if (!colNames.includes('image_mobile')) {
         await pool.query("ALTER TABLE banners ADD COLUMN image_mobile VARCHAR(500) NULL AFTER image_url")
@@ -24,8 +24,14 @@ export class Banner {
     const params = []
 
     if (device && device !== 'all') {
-      sql += ' AND (device_type = ? OR device_type = "all" OR device_type IS NULL)'
-      params.push(device)
+      if (device === 'mobile') {
+        sql += ' AND device_type = "mobile"'
+      } else if (device === 'pc') {
+        sql += ' AND (device_type = "pc" OR device_type = "all" OR device_type IS NULL)'
+      } else {
+        sql += ' AND device_type = ?'
+        params.push(device)
+      }
     }
 
     sql += ' ORDER BY sort_order ASC, id DESC'
@@ -42,7 +48,7 @@ export class Banner {
   static async create({
     title,
     subtitle,
-    device_type = 'all',
+    device_type = 'pc',
     image_url,
     image_mobile = null,
     link_url,
@@ -56,7 +62,7 @@ export class Banner {
       [
         title || null,
         subtitle || null,
-        device_type || 'all',
+        device_type || 'pc',
         image_url,
         image_mobile || null,
         link_url || '/contact',
@@ -84,7 +90,7 @@ export class Banner {
     {
       title,
       subtitle,
-      device_type = 'all',
+      device_type = 'pc',
       image_url,
       image_mobile = null,
       link_url,
@@ -99,7 +105,7 @@ export class Banner {
       [
         title,
         subtitle,
-        device_type || 'all',
+        device_type || 'pc',
         image_url,
         image_mobile || null,
         link_url,

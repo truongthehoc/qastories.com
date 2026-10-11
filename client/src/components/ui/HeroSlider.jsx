@@ -23,19 +23,19 @@ const defaultSlides = [
     id: 1,
     image_url: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=75&auto=format',
     title: 'QA Stories Newborn Photography 1',
-    device_type: 'all',
+    device_type: 'pc',
   },
   {
     id: 2,
     image_url: 'https://images.unsplash.com/photo-1546015720-b8b30df5aa27?w=1080&q=75&auto=format',
     title: 'QA Stories Baby Photography 2',
-    device_type: 'all',
+    device_type: 'pc',
   },
   {
     id: 3,
     image_url: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=1080&q=75&auto=format',
     title: 'QA Stories Family Photography 3',
-    device_type: 'all',
+    device_type: 'pc',
   },
 ]
 
@@ -75,21 +75,28 @@ export default function HeroSlider() {
     }
   }, [])
 
-  // Phân tách banner theo thiết bị:
-  // - Trên Mobile: Sử dụng chung tất cả banner của PC, ưu tiên ảnh mobile riêng nếu có upload.
-  // - Nếu có banner chỉ định riêng device_type === 'pc', nó sẽ chỉ hiện trên PC.
-  // - Nếu có banner chỉ định riêng device_type === 'mobile', nó sẽ chỉ hiện trên Mobile.
+  // Phân tách banner PC và Mobile độc lập hoàn toàn:
+  // - Khi truy cập bằng Mobile: Lấy riêng danh sách banner Mobile (device_type === 'mobile')
+  // - Khi truy cập bằng PC: Lấy riêng danh sách banner PC (device_type === 'pc')
   const displayedSlides = useMemo(() => {
     if (!slides || slides.length === 0) return defaultSlides
 
     if (isMobile) {
-      // Loại bỏ các banner chỉ định riêng chỉ cho PC
-      const mobileSlides = slides.filter((s) => s.device_type !== 'pc')
-      return mobileSlides.length > 0 ? mobileSlides : slides
+      // 1. Ưu tiên tuyệt đối danh sách Banner được tạo riêng cho Mobile
+      const mobileOnly = slides.filter((s) => s.device_type === 'mobile')
+      if (mobileOnly.length > 0) return mobileOnly
+
+      // Fallback nếu chưa có banner mobile nào
+      const fallback = slides.filter((s) => s.device_type !== 'mobile')
+      return fallback.length > 0 ? fallback : slides
     } else {
-      // Loại bỏ các banner chỉ định riêng chỉ cho Mobile
-      const pcSlides = slides.filter((s) => s.device_type !== 'mobile')
-      return pcSlides.length > 0 ? pcSlides : slides
+      // 1. Ưu tiên danh sách Banner được tạo riêng cho PC
+      const pcOnly = slides.filter(
+        (s) => s.device_type === 'pc' || s.device_type === 'all' || !s.device_type
+      )
+      if (pcOnly.length > 0) return pcOnly
+
+      return slides
     }
   }, [slides, isMobile])
 
@@ -117,11 +124,7 @@ export default function HeroSlider() {
           className="h-full w-full hero-swiper"
         >
           {displayedSlides.map((slide, idx) => {
-            // Trên Mobile: Nếu có ảnh mobile riêng thì dùng, nếu không thì dùng chung ảnh PC
-            const rawUrl =
-              isMobile && slide.image_mobile
-                ? slide.image_mobile
-                : slide.image_url || slide.image
+            const rawUrl = slide.image_url || slide.image
             const isUnsplash = rawUrl?.includes('images.unsplash.com')
 
             return (
