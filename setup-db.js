@@ -110,6 +110,10 @@ async function setupDatabase() {
       if (!colNames.includes('status')) {
         await connection.query(`ALTER TABLE admins ADD COLUMN status ENUM('active', 'inactive') DEFAULT 'active' AFTER permissions`)
       }
+    } catch (e) {
+      // Ignore
+    }
+
     // Đảm bảo nâng cấp cột cho bảng banners nếu thiếu
     try {
       const [bannerCols] = await connection.query(`SHOW COLUMNS FROM banners`)
