@@ -316,7 +316,7 @@ export default function Footer() {
             <p className="font-body text-xs text-gray-400">
               {settings?.footer_copyright_text || (
                 <>
-                  &copy; {new Date().getFullYear()} <span className="text-white font-medium">{brandName}</span>. Bảo lưu mọi quyền.
+                  &copy; {new Date().getFullYear()} <span className="text-white font-medium">{brandName}</span>. Bảo lưu mọi quyền. <span className="text-gray-500 text-[10px] ml-2 font-mono">v1.0.1</span>
                 </>
               )}
             </p>
