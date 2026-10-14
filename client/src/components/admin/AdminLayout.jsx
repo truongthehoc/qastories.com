@@ -211,7 +211,7 @@ export default function AdminLayout() {
         {/* Sidebar Footer */}
         <div className="p-3 border-t border-slate-800/90 bg-slate-950/40 text-center">
           <p className="text-[10.5px] text-slate-500 font-medium">
-            QA Stories Studio System v1.0
+            QA Stories Studio System v1.0.1
           </p>
         </div>
       </aside>

@@ -145,7 +145,7 @@ export default function AdminLogin() {
           {/* System Version Footer */}
           <div className="mt-6 pt-6 border-t border-slate-100 text-center">
             <p className="text-xs text-slate-400 font-medium">
-              {brandName} Studio System • Phiên bản v1.0.0
+              {brandName} Studio System • Phiên bản v1.0.1
             </p>
           </div>
         </div>
