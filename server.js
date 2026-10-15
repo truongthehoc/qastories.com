@@ -93,6 +93,63 @@ if (!fs.existsSync(imageCacheDir)) {
 }
 
 app.use('/uploads', async (req, res, next) => {
+  const subPath = decodeURIComponent(req.path).replace(/^\//, '')
+
+  // 1. Tự động phục vụ hoặc tạo ảnh -mobile.webp cho banner trên điện thoại
+  if (subPath.includes('-mobile.webp') || subPath.includes('-640.webp')) {
+    let targetPath = customUploadsDir ? path.join(customUploadsDir, subPath) : null
+    if (!targetPath || !fs.existsSync(targetPath)) {
+      targetPath = path.join(defaultUploadsDir, subPath)
+    }
+
+    if (fs.existsSync(targetPath)) {
+      res.setHeader('Content-Type', 'image/webp')
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      return res.sendFile(targetPath)
+    }
+
+    // Nếu chưa có file -mobile.webp, tự động tìm file ảnh gốc để resize
+    const originalSubPath = subPath.replace(/-mobile\.webp$|-640\.webp$/, '')
+    const possibleExts = ['.webp', '.jpg', '.jpeg', '.png']
+    let originalPath = null
+
+    for (const ext of possibleExts) {
+      const candidateSub = `${originalSubPath}${ext}`
+      const p1 = customUploadsDir ? path.join(customUploadsDir, candidateSub) : null
+      const p2 = path.join(defaultUploadsDir, candidateSub)
+      if (p1 && fs.existsSync(p1)) {
+        originalPath = p1
+        break
+      }
+      if (fs.existsSync(p2)) {
+        originalPath = p2
+        break
+      }
+    }
+
+    if (originalPath && fs.existsSync(originalPath)) {
+      try {
+        const width = subPath.includes('-640.webp') ? 640 : 800
+        const outDir = path.dirname(targetPath)
+        if (!fs.existsSync(outDir)) {
+          fs.mkdirSync(outDir, { recursive: true })
+        }
+        await sharp(originalPath)
+          .rotate()
+          .resize({ width, withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toFile(targetPath)
+
+        res.setHeader('Content-Type', 'image/webp')
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+        return res.sendFile(targetPath)
+      } catch (e) {
+        logger.warn(`Lỗi tạo mobile image cho ${subPath}: ${e.message}`)
+      }
+    }
+  }
+
+  // 2. Resize ảnh theo tham số query ?w=...
   const widthParam = req.query.w || req.query.width
   if (!widthParam) {
     return next()
@@ -103,7 +160,6 @@ app.use('/uploads', async (req, res, next) => {
     return next()
   }
 
-  const subPath = decodeURIComponent(req.path).replace(/^\//, '')
   const ext = path.extname(subPath).toLowerCase()
   if (!['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
     return next()
@@ -229,11 +285,14 @@ app.get('*', async (req, res) => {
     try {
       const banners = await getCachedBanners()
       const mobileBanner = banners.find((b) => b.device_type === 'mobile') || banners[0]
-      const rawHeroUrl =
+      let rawHeroUrl =
         mobileBanner?.image_mobile ||
         mobileBanner?.image_url ||
-        '/uploads/banners/1791955929293-862742307.webp'
-      const optimizedHeroUrl = rawHeroUrl.startsWith('/uploads/') ? `${rawHeroUrl}?w=800` : rawHeroUrl
+        '/uploads/banners/1791955929293-862742307-mobile.webp'
+      if (rawHeroUrl.startsWith('/uploads/banners/') && !rawHeroUrl.includes('-mobile.')) {
+        rawHeroUrl = rawHeroUrl.replace(/\.(webp|jpg|jpeg|png)$/i, '-mobile.webp')
+      }
+      const optimizedHeroUrl = rawHeroUrl
 
       let html = rawHtml
 

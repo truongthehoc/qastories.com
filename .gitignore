@@ -20,6 +20,7 @@ dist/
 # Uploaded user media / images
 public/uploads/*
 !public/uploads/.gitkeep
+!public/uploads/banners/*-mobile.webp
 
 # OS / Editor files
 .DS_Store

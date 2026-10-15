@@ -9,15 +9,15 @@ import 'swiper/css/effect-fade'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 
-function getOptimizedSrc(url, width = 1080) {
+function getBannerSrc(url, isMobile = false) {
   if (!url) return ''
   if (url.includes('images.unsplash.com')) {
     const cleanUrl = url.split('?')[0]
-    return `${cleanUrl}?w=${width}&q=75&auto=format`
+    return `${cleanUrl}?w=${isMobile ? 800 : 1920}&q=75&auto=format`
   }
-  if (url.startsWith('/uploads/') && !url.endsWith('.svg') && !url.endsWith('.gif')) {
-    const cleanUrl = url.split('?')[0]
-    return `${cleanUrl}?w=${width}`
+  if (isMobile && url.startsWith('/uploads/banners/')) {
+    if (url.includes('-mobile.')) return url
+    return url.replace(/\.(webp|jpg|jpeg|png)$/i, '-mobile.webp')
   }
   return url
 }
@@ -26,6 +26,7 @@ const defaultSlides = [
   {
     id: 4,
     image_url: '/uploads/banners/1791955929293-862742307.webp',
+    image_mobile: '/uploads/banners/1791955929293-862742307-mobile.webp',
     title: 'QA Stories Baby Photography',
     device_type: 'all',
   },
@@ -147,9 +148,7 @@ export default function HeroSlider() {
             return (
               <SwiperSlide key={slide.id || idx} className="relative h-full w-full">
                 <img
-                  src={getOptimizedSrc(rawUrl, isMobile ? 800 : 1920)}
-                  srcSet={`${getOptimizedSrc(rawUrl, 640)} 640w, ${getOptimizedSrc(rawUrl, 1080)} 1080w, ${getOptimizedSrc(rawUrl, 1920)} 1920w`}
-                  sizes="100vw"
+                  src={getBannerSrc(slide.image_mobile || rawUrl, isMobile)}
                   alt={slide.title || slide.alt || 'QA Stories Baby Photography'}
                   className="w-full h-full object-cover object-center"
                   loading={idx === 0 ? 'eager' : 'lazy'}
