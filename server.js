@@ -270,6 +270,14 @@ function getIndexHtml(indexPath) {
   }
 }
 
+// Chặn không cho request tĩnh bị thiếu trong /uploads hoặc /assets fallback về index.html
+app.use((req, res, next) => {
+  if (req.path.startsWith('/uploads/') || req.path.startsWith('/assets/')) {
+    return res.status(404).end()
+  }
+  next()
+})
+
 // 5. Fallback SPA Routing cho React với High-Speed Mobile LCP Injection
 app.get('*', async (req, res) => {
   const indexPath = path.join(publicDir, 'index.html')
