@@ -15,32 +15,35 @@ function getOptimizedSrc(url, width = 1080) {
     const cleanUrl = url.split('?')[0]
     return `${cleanUrl}?w=${width}&q=75&auto=format`
   }
+  if (url.startsWith('/uploads/') && !url.endsWith('.svg') && !url.endsWith('.gif')) {
+    const cleanUrl = url.split('?')[0]
+    return `${cleanUrl}?w=${width}`
+  }
   return url
 }
 
 const defaultSlides = [
   {
+    id: 4,
+    image_url: '/uploads/banners/1791955929293-862742307.webp',
+    title: 'QA Stories Baby Photography',
+    device_type: 'all',
+  },
+  {
     id: 1,
     image_url: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=75&auto=format',
-    title: 'QA Stories Newborn Photography 1',
-    device_type: 'pc',
-  },
-  {
-    id: 2,
-    image_url: 'https://images.unsplash.com/photo-1546015720-b8b30df5aa27?w=1080&q=75&auto=format',
-    title: 'QA Stories Baby Photography 2',
-    device_type: 'pc',
-  },
-  {
-    id: 3,
-    image_url: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=1080&q=75&auto=format',
-    title: 'QA Stories Family Photography 3',
+    title: 'QA Stories Newborn Photography',
     device_type: 'pc',
   },
 ]
 
 export default function HeroSlider() {
   const [slides, setSlides] = useState(() => {
+    // 1. Initial data from server-side injection
+    if (typeof window !== 'undefined' && Array.isArray(window.__INITIAL_DATA__?.banners) && window.__INITIAL_DATA__.banners.length > 0) {
+      return window.__INITIAL_DATA__.banners
+    }
+    // 2. Local storage cached banners
     try {
       const cached = localStorage.getItem('qastories_cached_banners')
       if (cached) {
@@ -48,18 +51,9 @@ export default function HeroSlider() {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed
       }
     } catch {}
-    return []
+    return defaultSlides
   })
-  const [loading, setLoading] = useState(() => {
-    try {
-      const cached = localStorage.getItem('qastories_cached_banners')
-      if (cached) {
-        const parsed = JSON.parse(cached)
-        if (Array.isArray(parsed) && parsed.length > 0) return false
-      }
-    } catch {}
-    return true
-  })
+  const [loading, setLoading] = useState(false)
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth < 768
@@ -103,28 +97,26 @@ export default function HeroSlider() {
   // - Khi truy cập bằng Mobile: Lấy riêng danh sách banner Mobile (device_type === 'mobile')
   // - Khi truy cập bằng PC: Lấy riêng danh sách banner PC (device_type === 'pc')
   const displayedSlides = useMemo(() => {
-    if (!slides || slides.length === 0) {
-      return loading ? [] : defaultSlides
-    }
+    const activeList = slides && slides.length > 0 ? slides : defaultSlides
 
     if (isMobile) {
       // 1. Ưu tiên tuyệt đối danh sách Banner được tạo riêng cho Mobile
-      const mobileOnly = slides.filter((s) => s.device_type === 'mobile')
+      const mobileOnly = activeList.filter((s) => s.device_type === 'mobile')
       if (mobileOnly.length > 0) return mobileOnly
 
       // Fallback nếu chưa có banner mobile nào
-      const fallback = slides.filter((s) => s.device_type !== 'mobile')
-      return fallback.length > 0 ? fallback : slides
+      const fallback = activeList.filter((s) => s.device_type !== 'mobile')
+      return fallback.length > 0 ? fallback : activeList
     } else {
       // 1. Ưu tiên danh sách Banner được tạo riêng cho PC
-      const pcOnly = slides.filter(
+      const pcOnly = activeList.filter(
         (s) => s.device_type === 'pc' || s.device_type === 'all' || !s.device_type
       )
       if (pcOnly.length > 0) return pcOnly
 
-      return slides
+      return activeList
     }
-  }, [slides, isMobile, loading])
+  }, [slides, isMobile])
 
   return (
     <section className="relative h-screen w-full overflow-hidden bg-neutral-900 flex flex-col justify-end select-none">
@@ -151,17 +143,12 @@ export default function HeroSlider() {
         >
           {displayedSlides.map((slide, idx) => {
             const rawUrl = slide.image_url || slide.image
-            const isUnsplash = rawUrl?.includes('images.unsplash.com')
 
             return (
               <SwiperSlide key={slide.id || idx} className="relative h-full w-full">
                 <img
                   src={getOptimizedSrc(rawUrl, isMobile ? 800 : 1920)}
-                  srcSet={
-                    isUnsplash
-                      ? `${getOptimizedSrc(rawUrl, 640)} 640w, ${getOptimizedSrc(rawUrl, 1080)} 1080w, ${getOptimizedSrc(rawUrl, 1920)} 1920w`
-                      : undefined
-                  }
+                  srcSet={`${getOptimizedSrc(rawUrl, 640)} 640w, ${getOptimizedSrc(rawUrl, 1080)} 1080w, ${getOptimizedSrc(rawUrl, 1920)} 1920w`}
                   sizes="100vw"
                   alt={slide.title || slide.alt || 'QA Stories Baby Photography'}
                   className="w-full h-full object-cover object-center"

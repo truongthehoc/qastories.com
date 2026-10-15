@@ -31,37 +31,35 @@
     <meta name="twitter:description" content="Lưu giữ từng khoảnh khắc đầu đời thiêng liêng nhất của con yêu tại QA Stories Studio." />
     <meta name="twitter:image" content="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1200&h=630&fit=crop&q=85" />
 
-    <!-- Fast Font & Image Preconnects -->
+    <!-- Fast Font Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://images.unsplash.com" />
 
-    <!-- Preload Hero LCP Image for Mobile -->
+    <!-- Hero LCP Preload (Dynamically updated by server.js or default fallback) -->
+    <!-- __HERO_LCP_PRELOAD__ -->
     <link
       rel="preload"
       as="image"
-      href="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=75&auto=format"
-      imagesrcset="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=640&q=75&auto=format 640w, https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=75&auto=format 1080w"
-      imagesizes="100vw"
+      href="/uploads/banners/1791955929293-862742307.webp?w=800"
       fetchpriority="high"
     />
 
-    <!-- Non-blocking Google Fonts with display=swap -->
+    <!-- Non-blocking Google Fonts with display=swap (Mulish removed from public site) -->
     <link
       rel="preload"
       as="style"
-      href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Playfair+Display:wght@600;700&display=swap"
     />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Playfair+Display:wght@600;700&display=swap"
       media="print"
       onload="this.media='all'"
     />
     <noscript>
       <link
         rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Playfair+Display:wght@600;700&display=swap"
       />
     </noscript>
 
@@ -71,7 +69,7 @@
         "@context": "https://schema.org",
         "@type": "PhotographyStudio",
         "name": "QA Stories Studio",
-        "image": "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1200&q=85",
+        "image": "https://qastories.vn/uploads/banners/1791955929293-862742307.webp",
         "description": "Studio chụp ảnh sơ sinh newborn, thôi nôi, 100 ngày tuổi và gia đình uy tín với phong cách nghệ thuật tinh tế.",
         "url": "https://qastories.vn",
         "telephone": "+84901234567",
@@ -93,13 +91,33 @@
         ]
       }
     </script>
-    <script type="module" crossorigin src="/assets/index-8lyDdIMB.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-react-BrOApJ5d.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-motion-BW6Wkz6p.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-icons-CYXQI6xS.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-CKGG4xTW.css">
+    <script type="module" crossorigin src="/assets/index-BT0KyvJO.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-swiper-BjIvoWBZ.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-react-1IccMEFD.js">
+    <link rel="stylesheet" crossorigin href="/assets/vendor-swiper-BdFYvaBs.css">
+    <link rel="stylesheet" crossorigin href="/assets/vendor-react-Dkt8wary.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-DqXPI0qw.css">
   </head>
   <body class="bg-white text-gray-900 antialiased selection:bg-primary selection:text-white">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Instant Hero Shell for Mobile FCP/LCP (< 0.8s) -->
+      <div id="hero-shell" style="position:relative;width:100vw;height:100vh;background-color:#171717;overflow:hidden;">
+        <!-- Top navbar shell -->
+        <div style="position:absolute;top:0;left:0;right:0;height:72px;background:linear-gradient(to bottom,rgba(0,0,0,0.6),transparent);z-index:10;display:flex;align-items:center;justify-content:space-between;padding:0 16px;">
+          <span style="color:#ffffff;font-family:serif;font-size:18px;font-weight:bold;letter-spacing:1px;">QA Stories</span>
+          <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.1);"></div>
+        </div>
+        <!-- __HERO_SHELL_IMAGE__ -->
+        <img
+          src="/uploads/banners/1791955929293-862742307.webp?w=800"
+          alt="QA Stories Studio"
+          style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;"
+          fetchpriority="high"
+          decoding="async"
+        />
+        <!-- Bottom overlay -->
+        <div style="position:absolute;bottom:0;left:0;right:0;height:140px;background:linear-gradient(to top,rgba(0,0,0,0.4),transparent);pointer-events:none;"></div>
+      </div>
+    </div>
   </body>
 </html>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -393,7 +393,16 @@ export default function AdminLayout() {
 
         {/* Page Content View */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
+                <div className="w-9 h-9 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
+                <span className="text-xs font-medium text-slate-400">Đang tải trang quản trị...</span>
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

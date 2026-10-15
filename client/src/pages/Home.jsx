@@ -7,6 +7,19 @@ import { useSettings } from '../context/SettingsContext'
 import SEO from '../components/ui/SEO'
 import api from '../utils/api'
 
+function getOptimizedAlbumSrc(url, width = 600) {
+  if (!url) return ''
+  if (url.includes('images.unsplash.com')) {
+    const cleanUrl = url.split('?')[0]
+    return `${cleanUrl}?w=${width}&q=80&auto=format`
+  }
+  if (url.startsWith('/uploads/') && !url.endsWith('.svg') && !url.endsWith('.gif')) {
+    const cleanUrl = url.split('?')[0]
+    return `${cleanUrl}?w=${width}`
+  }
+  return url
+}
+
 const defaultFeaturedAlbums = [
   {
     id: 1,
@@ -321,7 +334,7 @@ export default function Home() {
                     >
                       <div className="relative rounded-3xl overflow-hidden shadow-lg card-hover border border-orange-100/50 bg-gray-100">
                         <img
-                          src={album.image}
+                          src={getOptimizedAlbumSrc(album.image, 600)}
                           alt={album.title}
                           onLoad={(e) => {
                             const { naturalWidth, naturalHeight } = e.target

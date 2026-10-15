@@ -9,6 +9,8 @@ import apiRoutes from './routes/index.js'
 import errorHandler from './middlewares/errorHandler.js'
 import logger from './utils/logger.js'
 import { testConnection } from './config/db.js'
+import sharp from 'sharp'
+import { getCachedBanners } from './utils/bannersCache.js'
 
 dotenv.config()
 
@@ -82,7 +84,67 @@ app.use(
   })
 )
 
-// B. Ảnh Uploads người dùng -> Hỗ trợ cả ổ đĩa riêng (UPLOAD_DIR) và thư mục public/uploads mặc định
+// B. Dynamic Responsive Image Resizer for mobile (?w=640, ?w=800, ?w=1080)
+const imageCacheDir = path.join(publicDir, 'uploads', '.cache')
+if (!fs.existsSync(imageCacheDir)) {
+  try {
+    fs.mkdirSync(imageCacheDir, { recursive: true })
+  } catch (e) {}
+}
+
+app.use('/uploads', async (req, res, next) => {
+  const widthParam = req.query.w || req.query.width
+  if (!widthParam) {
+    return next()
+  }
+
+  const width = parseInt(widthParam, 10)
+  if (isNaN(width) || width <= 0 || width > 2560) {
+    return next()
+  }
+
+  const subPath = decodeURIComponent(req.path).replace(/^\//, '')
+  const ext = path.extname(subPath).toLowerCase()
+  if (!['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+    return next()
+  }
+
+  let originalPath = customUploadsDir ? path.join(customUploadsDir, subPath) : null
+  if (!originalPath || !fs.existsSync(originalPath)) {
+    originalPath = path.join(defaultUploadsDir, subPath)
+  }
+  if (!fs.existsSync(originalPath)) {
+    return next()
+  }
+
+  const baseName = path.basename(subPath, ext)
+  const relDir = path.dirname(subPath)
+  const cachedSubDir = path.join(imageCacheDir, relDir)
+  const cachedFileName = `${baseName}-w${width}.webp`
+  const cachedFilePath = path.join(cachedSubDir, cachedFileName)
+
+  try {
+    if (!fs.existsSync(cachedFilePath)) {
+      if (!fs.existsSync(cachedSubDir)) {
+        fs.mkdirSync(cachedSubDir, { recursive: true })
+      }
+      await sharp(originalPath)
+        .rotate()
+        .resize({ width, withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toFile(cachedFilePath)
+    }
+
+    res.setHeader('Content-Type', 'image/webp')
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+    return res.sendFile(cachedFilePath)
+  } catch (err) {
+    logger.warn(`Image resize error for ${subPath}: ${err.message}`)
+    return next()
+  }
+})
+
+// C. Phục vụ file uploads tĩnh nguyên bản
 if (customUploadsDir) {
   logger.info(`📁 Kích hoạt phục vụ ảnh từ ổ đĩa riêng: ${customUploadsDir}`)
   app.use(
@@ -114,13 +176,13 @@ app.use(
   })
 )
 
-// C. Các file tĩnh khác trong public (robots.txt, sitemap.xml, favicon.svg)
+// D. Các file tĩnh khác trong public (robots.txt, sitemap.xml, favicon.svg)
 app.use(
   express.static(publicDir, {
+    index: false,
     etag: true,
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.html')) {
-        // Luôn fetch mới nhất cho HTML để cập nhật bản build tức thì
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
       } else if (
         filePath.endsWith('.xml') ||
@@ -137,14 +199,74 @@ app.use(
 // 4. API Routes
 app.use('/api', apiRoutes)
 
-// 5. Fallback SPA Routing cho React
-app.get('*', (req, res) => {
-  const indexPath = path.join(publicDir, 'index.html')
-  if (fs.existsSync(indexPath)) {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
-    return res.sendFile(indexPath)
+// In-memory cache of built index.html
+let indexHtmlCache = null
+function getIndexHtml(indexPath) {
+  if (!fs.existsSync(indexPath)) return null
+  if (process.env.NODE_ENV === 'production' && indexHtmlCache) {
+    return indexHtmlCache
   }
-  return res.sendFile(path.join(__dirname, 'views', '404.html'))
+  try {
+    indexHtmlCache = fs.readFileSync(indexPath, 'utf-8')
+    return indexHtmlCache
+  } catch (e) {
+    return null
+  }
+}
+
+// 5. Fallback SPA Routing cho React với High-Speed Mobile LCP Injection
+app.get('*', async (req, res) => {
+  const indexPath = path.join(publicDir, 'index.html')
+  const rawHtml = getIndexHtml(indexPath)
+  if (!rawHtml) {
+    return res.sendFile(path.join(__dirname, 'views', '404.html'))
+  }
+
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+
+  // Tối ưu tải trang chủ di động: FCP & LCP siêu tốc < 1.0s
+  if (req.path === '/' || req.path === '/index.html') {
+    try {
+      const banners = await getCachedBanners()
+      const mobileBanner = banners.find((b) => b.device_type === 'mobile') || banners[0]
+      const rawHeroUrl =
+        mobileBanner?.image_mobile ||
+        mobileBanner?.image_url ||
+        '/uploads/banners/1791955929293-862742307.webp'
+      const optimizedHeroUrl = rawHeroUrl.startsWith('/uploads/') ? `${rawHeroUrl}?w=800` : rawHeroUrl
+
+      let html = rawHtml
+
+      // 1. Cập nhật preload link cho ảnh Hero LCP
+      const preloadTag = `<link rel="preload" as="image" href="${optimizedHeroUrl}" fetchpriority="high" />`
+      if (html.includes('<!-- __HERO_LCP_PRELOAD__ -->')) {
+        html = html.replace(
+          /<!-- __HERO_LCP_PRELOAD__ -->[\s\S]*?(?=<link rel="stylesheet"|<link rel="preload" as="style"|<script|<\/head>)/i,
+          `<!-- __HERO_LCP_PRELOAD__ -->\n    ${preloadTag}\n    `
+        )
+      }
+
+      // 2. Tiêm dữ liệu banner ban đầu loại bỏ waterfall request
+      const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify({ banners })};</script>`
+      html = html.replace('</head>', `  ${initialDataScript}\n</head>`)
+
+      // 3. Tiêm ảnh Hero vào shell HTML để hiển thị tức thì khi nhận byte đầu tiên
+      if (html.includes('<!-- __HERO_SHELL_IMAGE__ -->')) {
+        const shellImageTag = `<!-- __HERO_SHELL_IMAGE__ -->\n        <img src="${optimizedHeroUrl}" alt="QA Stories Studio" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" fetchpriority="high" decoding="async" />`
+        html = html.replace(
+          /<!-- __HERO_SHELL_IMAGE__ -->[\s\S]*?(?=<div style="position:absolute;bottom:0)/i,
+          shellImageTag + '\n        '
+        )
+      }
+
+      return res.type('html').send(html)
+    } catch (e) {
+      logger.warn(`Lỗi tạo index.html tối ưu: ${e.message}`)
+      return res.type('html').send(rawHtml)
+    }
+  }
+
+  return res.type('html').send(rawHtml)
 })
 
 // Central Error Handler

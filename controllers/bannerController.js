@@ -1,4 +1,5 @@
 import Banner from '../models/Banner.js'
+import { invalidateBannersCache } from '../utils/bannersCache.js'
 
 export const getPublicBanners = async (req, res, next) => {
   try {
@@ -50,6 +51,7 @@ export const createBanner = async (req, res, next) => {
       is_active: is_active !== false && is_active !== 0 && is_active !== '0',
     })
 
+    invalidateBannersCache()
     res.json({ success: true, message: 'Tạo banner thành công', data: banner })
   } catch (error) {
     next(error)
@@ -83,6 +85,7 @@ export const updateBanner = async (req, res, next) => {
       is_active: is_active !== false && is_active !== 0 && is_active !== '0',
     })
 
+    invalidateBannersCache()
     res.json({ success: true, message: 'Cập nhật banner thành công' })
   } catch (error) {
     next(error)
@@ -94,6 +97,7 @@ export const toggleBannerActive = async (req, res, next) => {
     const { id } = req.params
     const { is_active } = req.body
     await Banner.toggleActive(id, is_active)
+    invalidateBannersCache()
     res.json({ success: true, message: 'Cập nhật trạng thái thành công' })
   } catch (error) {
     next(error)
@@ -104,6 +108,7 @@ export const deleteBanner = async (req, res, next) => {
   try {
     const { id } = req.params
     await Banner.delete(id)
+    invalidateBannersCache()
     res.json({ success: true, message: 'Xóa banner thành công' })
   } catch (error) {
     next(error)

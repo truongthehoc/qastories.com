@@ -13,26 +13,26 @@ import AdminLayout from './components/admin/AdminLayout'
 
 import PublicPageGuard from './components/layout/PublicPageGuard'
 
-// Public Pages (Lazy loaded)
-const Home = lazy(() => import('./pages/Home'))
+// Public Pages
+import Home from './pages/Home'
 const Album = lazy(() => import('./pages/Album'))
 const AlbumDetail = lazy(() => import('./pages/AlbumDetail'))
 const About = lazy(() => import('./pages/About'))
 const Contact = lazy(() => import('./pages/Contact'))
 
-// Admin Pages (Directly imported for instant switching without full-screen flicker)
-import AdminLogin from './pages/admin/AdminLogin'
-import Dashboard from './pages/admin/Dashboard'
-import BookingsManager from './pages/admin/BookingsManager'
-import BannersManager from './pages/admin/BannersManager'
-import QuickAccessManager from './pages/admin/QuickAccessManager'
-import AlbumsManager from './pages/admin/AlbumsManager'
-import PackagesManager from './pages/admin/PackagesManager'
-import AboutManager from './pages/admin/AboutManager'
-import SettingsManager from './pages/admin/SettingsManager'
-import AnalyticsView from './pages/admin/AnalyticsView'
-import UsersManager from './pages/admin/UsersManager'
-import FooterManager from './pages/admin/FooterManager'
+// Admin Pages (Lazy loaded so public visitors never download admin bundle)
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'))
+const BookingsManager = lazy(() => import('./pages/admin/BookingsManager'))
+const BannersManager = lazy(() => import('./pages/admin/BannersManager'))
+const QuickAccessManager = lazy(() => import('./pages/admin/QuickAccessManager'))
+const AlbumsManager = lazy(() => import('./pages/admin/AlbumsManager'))
+const PackagesManager = lazy(() => import('./pages/admin/PackagesManager'))
+const AboutManager = lazy(() => import('./pages/admin/AboutManager'))
+const SettingsManager = lazy(() => import('./pages/admin/SettingsManager'))
+const AnalyticsView = lazy(() => import('./pages/admin/AnalyticsView'))
+const UsersManager = lazy(() => import('./pages/admin/UsersManager'))
+const FooterManager = lazy(() => import('./pages/admin/FooterManager'))
 
 function LoadingSpinner() {
   return (
@@ -88,7 +88,14 @@ export default function App() {
             </Route>
 
             {/* 2. Admin Login */}
-            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route
+              path="/admin/login"
+              element={
+                <Suspense fallback={<LoadingSpinner />}>
+                  <AdminLogin />
+                </Suspense>
+              }
+            />
 
             {/* 3. Protected Admin Panel Routes */}
             <Route path="/admin" element={<ProtectedRoute />}>

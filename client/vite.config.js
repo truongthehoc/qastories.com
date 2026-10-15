@@ -29,14 +29,40 @@ export default defineConfig({
     cssCodeSplit: true,
     minify: "esbuild",
     chunkSizeWarningLimit: 600,
+    modulePreload: {
+      polyfill: false,
+      resolveDependencies: (filename, deps, { hostId, hostType }) => {
+        // Only preload critical dependencies for initial home page
+        // Exclude heavy lazy-only libraries (motion, lightbox) and admin chunks
+        return deps.filter(
+          (dep) =>
+            !dep.includes('motion') &&
+            !dep.includes('lightbox') &&
+            !dep.includes('Manager') &&
+            !dep.includes('Admin')
+        )
+      },
+    },
     rollupOptions: {
       output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
-          "vendor-motion": ["framer-motion"],
-          "vendor-swiper": ["swiper"],
-          "vendor-icons": ["lucide-react"],
-          "vendor-lightbox": ["yet-another-react-lightbox"],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react'
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-motion'
+            }
+            if (id.includes('swiper')) {
+              return 'vendor-swiper'
+            }
+            if (id.includes('yet-another-react-lightbox')) {
+              return 'vendor-lightbox'
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons'
+            }
+          }
         },
       },
     },
