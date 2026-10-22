@@ -97,8 +97,8 @@ app.use('/uploads', async (req, res, next) => {
 
   // 1. Tự động phục vụ hoặc tạo ảnh -mobile.webp cho banner trên điện thoại
   if (subPath.includes('-mobile.webp') || subPath.includes('-640.webp')) {
-    let targetPath = customUploadsDir ? path.join(customUploadsDir, subPath) : null
-    if (!targetPath || !fs.existsSync(targetPath)) {
+    let targetPath = customUploadsDir ? path.join(customUploadsDir, subPath) : path.join(defaultUploadsDir, subPath)
+    if (!fs.existsSync(targetPath) && customUploadsDir && fs.existsSync(path.join(defaultUploadsDir, subPath))) {
       targetPath = path.join(defaultUploadsDir, subPath)
     }
 
@@ -145,6 +145,8 @@ app.use('/uploads', async (req, res, next) => {
         return res.sendFile(targetPath)
       } catch (e) {
         logger.warn(`Lỗi tạo mobile image cho ${subPath}: ${e.message}`)
+        // Fallback: Gửi ảnh gốc để đảm bảo giao diện không bao giờ bị mất ảnh
+        return res.sendFile(originalPath)
       }
     }
   }
@@ -296,10 +298,7 @@ app.get('*', async (req, res) => {
       let rawHeroUrl =
         mobileBanner?.image_mobile ||
         mobileBanner?.image_url ||
-        '/uploads/banners/1791955929293-862742307-mobile.webp'
-      if (rawHeroUrl.startsWith('/uploads/banners/') && !rawHeroUrl.includes('-mobile.')) {
-        rawHeroUrl = rawHeroUrl.replace(/\.(webp|jpg|jpeg|png)$/i, '-mobile.webp')
-      }
+        'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=75&auto=format'
       const optimizedHeroUrl = rawHeroUrl
 
       let html = rawHtml

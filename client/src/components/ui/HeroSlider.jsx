@@ -15,26 +15,21 @@ function getBannerSrc(url, isMobile = false) {
     const cleanUrl = url.split('?')[0]
     return `${cleanUrl}?w=${isMobile ? 800 : 1920}&q=75&auto=format`
   }
-  if (isMobile && url.startsWith('/uploads/banners/')) {
-    if (url.includes('-mobile.')) return url
-    return url.replace(/\.(webp|jpg|jpeg|png)$/i, '-mobile.webp')
-  }
   return url
 }
 
 const defaultSlides = [
   {
-    id: 4,
-    image_url: '/uploads/banners/1791955929293-862742307.webp',
-    image_mobile: '/uploads/banners/1791955929293-862742307-mobile.webp',
-    title: 'QA Stories Baby Photography',
-    device_type: 'all',
-  },
-  {
     id: 1,
     image_url: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=75&auto=format',
     title: 'QA Stories Newborn Photography',
-    device_type: 'pc',
+    device_type: 'all',
+  },
+  {
+    id: 2,
+    image_url: 'https://images.unsplash.com/photo-1544126592-807ade215a0b?w=1080&q=75&auto=format',
+    title: 'QA Stories Baby Photography',
+    device_type: 'all',
   },
 ]
 
@@ -143,12 +138,12 @@ export default function HeroSlider() {
           className="h-full w-full hero-swiper"
         >
           {displayedSlides.map((slide, idx) => {
-            const rawUrl = slide.image_url || slide.image
+            const rawUrl = (isMobile && slide.image_mobile) ? slide.image_mobile : (slide.image_url || slide.image)
 
             return (
               <SwiperSlide key={slide.id || idx} className="relative h-full w-full">
                 <img
-                  src={getBannerSrc(slide.image_mobile || rawUrl, isMobile)}
+                  src={getBannerSrc(rawUrl, isMobile)}
                   alt={slide.title || slide.alt || 'QA Stories Baby Photography'}
                   className="w-full h-full object-cover object-center"
                   loading={idx === 0 ? 'eager' : 'lazy'}
@@ -156,6 +151,12 @@ export default function HeroSlider() {
                   decoding="async"
                   width={isMobile ? '800' : '1920'}
                   height={isMobile ? '1200' : '1080'}
+                  onError={(e) => {
+                    const fallback = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=75&auto=format'
+                    if (e.target.src !== fallback) {
+                      e.target.src = fallback
+                    }
+                  }}
                 />
                 {/* Top gradient for Navbar visibility */}
                 <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
