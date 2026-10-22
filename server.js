@@ -74,6 +74,20 @@ if (!fs.existsSync(defaultUploadsDir)) {
   } catch (e) {}
 }
 
+// Đảm bảo các thư mục con trong uploads luôn tồn tại sẵn sàng nhận file
+const requiredUploadDirs = ['branding', 'banners', 'albums', 'about', 'seo', '.cache']
+const activeUploadDirs = [customUploadsDir, defaultUploadsDir].filter(Boolean)
+for (const base of activeUploadDirs) {
+  for (const sub of requiredUploadDirs) {
+    const fullSubPath = path.join(base, sub)
+    if (!fs.existsSync(fullSubPath)) {
+      try {
+        fs.mkdirSync(fullSubPath, { recursive: true })
+      } catch (e) {}
+    }
+  }
+}
+
 // 3. Static Files with High-Performance HTTP Caching
 // A. Assets tĩnh có hash (JS, CSS chunks từ Vite) -> Cache vĩnh viễn 1 năm
 app.use(

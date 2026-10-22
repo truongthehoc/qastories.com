@@ -111,7 +111,7 @@ export default function SettingsManager() {
 
     try {
       setUploadingSeoImage(true)
-      const res = await api.uploadPhotos(files, 'seo')
+      const res = await api.uploadPhotos(files, 'branding')
       if (res.success && res.files && res.files[0]) {
         setForm((prev) => ({ ...prev, seo_image: res.files[0].url }))
       }

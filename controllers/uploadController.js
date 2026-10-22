@@ -19,17 +19,49 @@ export const uploadPhotos = async (req, res, next) => {
       })
     }
 
-    const category = req.body.category || 'general'
-    const targetDir = path.join(uploadBaseDir, category)
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true })
+    const requestedCategory = req.body.category || 'general'
+    let activeUploadBaseDir = uploadBaseDir
+    let actualCategory = requestedCategory
+    let targetDir = path.join(activeUploadBaseDir, actualCategory)
+
+    // Đảm bảo thư mục đích tồn tại với cơ chế fallback tự động nếu phân quyền bị chặn
+    try {
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true })
+      }
+    } catch (dirErr) {
+      logger.warn(`Không thể tạo thư mục upload ${targetDir} (${dirErr.message}), kích hoạt cơ chế fallback...`)
+
+      // Fallback 1: Thử dùng thư mục branding (nơi luôn tồn tại và có quyền ghi)
+      const brandingCandidate = path.join(activeUploadBaseDir, 'branding')
+      if (fs.existsSync(brandingCandidate)) {
+        targetDir = brandingCandidate
+        actualCategory = 'branding'
+      } else {
+        // Fallback 2: Thử dùng defaultUploadsDir trong public/uploads
+        const localUploadsDir = path.join(__dirname, '..', 'public', 'uploads')
+        const fallbackTarget = path.join(localUploadsDir, requestedCategory)
+        try {
+          if (!fs.existsSync(fallbackTarget)) {
+            fs.mkdirSync(fallbackTarget, { recursive: true })
+          }
+          targetDir = fallbackTarget
+          activeUploadBaseDir = localUploadsDir
+        } catch (localErr) {
+          // Fallback 3: Dùng thẳng thư mục uploads gốc
+          targetDir = fs.existsSync(activeUploadBaseDir) ? activeUploadBaseDir : localUploadsDir
+          actualCategory = ''
+        }
+      }
     }
+
+    const category = actualCategory
 
     // Cấu hình kích thước tối đa & chất lượng nén theo danh mục
     let maxDimension = 2048
     let quality = 85
 
-    if (category === 'banners') {
+    if (category === 'banners' || requestedCategory === 'banners' || requestedCategory === 'seo') {
       maxDimension = 2560
       quality = 88
     } else if (category === 'branding' || category === 'about') {
@@ -59,11 +91,12 @@ export const uploadPhotos = async (req, res, next) => {
             const outputPath = path.join(targetDir, filename)
             fs.writeFileSync(outputPath, file.buffer)
             const stat = fs.statSync(outputPath)
+            const fileUrl = category ? `/uploads/${category}/${filename}` : `/uploads/${filename}`
             return {
               filename,
               originalname: file.originalname,
               size: stat.size,
-              url: `/uploads/${category}/${filename}`,
+              url: fileUrl,
             }
           }
 
@@ -71,6 +104,7 @@ export const uploadPhotos = async (req, res, next) => {
           const isClientWebP = file.mimetype === 'image/webp' || file.originalname.toLowerCase().endsWith('.webp')
           const filename = `${uniqueSuffix}.webp`
           const outputPath = path.join(targetDir, filename)
+          const fileUrl = category ? `/uploads/${category}/${filename}` : `/uploads/${filename}`
 
           try {
             const image = sharp(file.buffer)
@@ -84,7 +118,7 @@ export const uploadPhotos = async (req, res, next) => {
                 filename,
                 originalname: file.originalname,
                 size: stat.size,
-                url: `/uploads/${category}/${filename}`,
+                url: fileUrl,
               }
             }
 
@@ -111,7 +145,7 @@ export const uploadPhotos = async (req, res, next) => {
               filename,
               originalname: file.originalname,
               size: stat.size,
-              url: `/uploads/${category}/${filename}`,
+              url: fileUrl,
             }
           } catch (sharpErr) {
             logger.warn(`Sharp optimize fallback cho file ${file.originalname}: ${sharpErr.message}`)
@@ -122,7 +156,7 @@ export const uploadPhotos = async (req, res, next) => {
               filename,
               originalname: file.originalname,
               size: stat.size,
-              url: `/uploads/${category}/${filename}`,
+              url: fileUrl,
             }
           }
         })
