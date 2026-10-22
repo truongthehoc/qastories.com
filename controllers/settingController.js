@@ -1,5 +1,5 @@
 import Setting from '../models/Setting.js'
-import { invalidateSettingsCache } from '../utils/seoHelper.js'
+import { invalidateSettingsCache, syncIndexHtmlSeo } from '../utils/seoHelper.js'
 
 export const getPublicSettings = async (req, res, next) => {
   try {
@@ -18,6 +18,7 @@ export const updateSettingsAdmin = async (req, res, next) => {
     }
     await Setting.setMany(settings)
     invalidateSettingsCache()
+    syncIndexHtmlSeo(settings)
     res.json({ success: true, message: 'Lưu cài đặt thành công' })
   } catch (error) {
     next(error)

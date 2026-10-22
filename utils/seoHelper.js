@@ -85,9 +85,17 @@ export async function getSeoForRequest(req) {
     'Studio chụp ảnh sơ sinh newborn, thôi nôi, 100 ngày tuổi và gia đình uy tín với phong cách nghệ thuật, ánh sáng tự nhiên.'
   const keywords = settings.seo_keywords || 'chụp ảnh em bé, chụp ảnh newborn, chụp thôi nôi, studio bé, QA stories'
 
-  // Mặc định ảnh trang chủ dùng endpoint ảnh JPEG 1200x630 siêu chuẩn:
+  // Xác định ảnh đại diện trang chủ: Ưu tiên ảnh seo_image admin đã upload
   let image = `${baseUrl}/og-image.jpg`
   let imageType = 'image/jpeg'
+  if (settings.seo_image) {
+    image = makeAbsoluteUrl(settings.seo_image, baseUrl)
+    if (image.toLowerCase().endsWith('.png')) imageType = 'image/png'
+    else if (image.toLowerCase().endsWith('.webp')) imageType = 'image/webp'
+  } else if (settings.brand_logo) {
+    image = makeAbsoluteUrl(settings.brand_logo, baseUrl)
+  }
+
   let ogType = 'website'
   let title = defaultTitle
   let description = defaultDesc
@@ -377,4 +385,65 @@ function escapeSvg(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;')
+}
+
+/**
+ * Tự động ghi đè các thẻ SEO vào file index.html trên đĩa để ngay cả khi Nginx phục vụ tĩnh,
+ * các bot mạng xã hội vẫn nhận được thẻ meta mới nhất 100%
+ */
+export function syncIndexHtmlSeo(settings) {
+  try {
+    const indexPath = path.join(publicDir, 'index.html')
+    if (!fs.existsSync(indexPath)) return
+
+    let html = fs.readFileSync(indexPath, 'utf-8')
+    const brandName = settings.brand_name || 'QA Stories'
+    const title = settings.seo_title || `${brandName} - Studio Chụp Ảnh Bé & Gia Đình Chuyên Nghiệp`
+    const description =
+      settings.seo_description ||
+      'Studio chụp ảnh sơ sinh newborn, thôi nôi, 100 ngày tuổi và gia đình uy tín với phong cách nghệ thuật, ánh sáng tự nhiên.'
+    const keywords = settings.seo_keywords || 'chụp ảnh em bé, chụp ảnh newborn, chụp thôi nôi, studio bé, QA stories'
+
+    let baseUrl = 'https://qastories.com'
+    if (settings.site_url && settings.site_url.trim().startsWith('http')) {
+      baseUrl = settings.site_url.trim().replace(/\/+$/, '')
+    }
+
+    let image = `${baseUrl}/og-image.jpg`
+    let imageType = 'image/jpeg'
+    if (settings.seo_image) {
+      image = makeAbsoluteUrl(settings.seo_image, baseUrl)
+      if (image.toLowerCase().endsWith('.png')) imageType = 'image/png'
+      else if (image.toLowerCase().endsWith('.webp')) imageType = 'image/webp'
+    } else if (settings.brand_logo) {
+      image = makeAbsoluteUrl(settings.brand_logo, baseUrl)
+    }
+
+    const seoData = {
+      title,
+      description,
+      keywords,
+      brandName,
+      url: baseUrl,
+      image,
+      imageType,
+      ogType: 'website',
+      baseUrl,
+    }
+
+    const updatedHtml = injectSeoToHtml(html, seoData)
+    fs.writeFileSync(indexPath, updatedHtml, 'utf-8')
+
+    // Đồng bộ cả file nguồn client/index.html
+    const clientIndexPath = path.join(rootDir, 'client', 'index.html')
+    if (fs.existsSync(clientIndexPath)) {
+      try {
+        const clientRaw = fs.readFileSync(clientIndexPath, 'utf-8')
+        const clientUpdated = injectSeoToHtml(clientRaw, seoData)
+        fs.writeFileSync(clientIndexPath, clientUpdated, 'utf-8')
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.warn('Lỗi đồng bộ index.html SEO:', err.message)
+  }
 }
