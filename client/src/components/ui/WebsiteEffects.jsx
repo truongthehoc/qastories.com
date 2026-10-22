@@ -8,6 +8,7 @@ const PALETTES = {
   leaves: ['#ea580c', '#c2410c', '#d97706', '#b45309', '#dc2626', '#f59e0b', '#9a3412'],
   sakura: ['#fbcfe8', '#f472b6', '#fda4af', '#fce7f3', '#f9a8d4'],
   sparkles: ['#fef08a', '#fde047', '#facc15', '#fbbf24', '#ffffff', '#fed7aa'],
+  bubbles: ['rgba(255, 255, 255, 0.7)', 'rgba(224, 242, 254, 0.7)', 'rgba(253, 230, 138, 0.7)'],
   tet: ['#facc15', '#eab308', '#f59e0b', '#e11d48', '#f43f5e', '#dc2626'],
 }
 
@@ -266,8 +267,8 @@ export default function WebsiteEffects({
     const resize = () => {
       if (!canvas) return
       const parent = isContainerPreview ? canvas.parentElement : null
-      width = parent ? parent.clientWidth : window.innerWidth
-      height = parent ? parent.clientHeight : window.innerHeight
+      width = Math.max(50, (parent ? parent.clientWidth : window.innerWidth) || 300)
+      height = Math.max(50, (parent ? parent.clientHeight : window.innerHeight) || 200)
       const dpr = window.devicePixelRatio || 1
 
       canvas.width = width * dpr

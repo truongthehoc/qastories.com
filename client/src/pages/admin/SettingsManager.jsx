@@ -49,11 +49,6 @@ export default function SettingsManager() {
   const [savedSuccess, setSavedSuccess] = useState(false)
   const [previewBgDark, setPreviewBgDark] = useState(false)
 
-  // Tự động reset trạng thái lỗi ảnh khi người dùng đổi link ảnh
-  useEffect(() => {
-    setPreviewImgError(false)
-  }, [form?.seo_image])
-
   const [form, setForm] = useState({
     site_url: 'https://qastories.com',
     brand_name: 'QA Stories',
@@ -85,6 +80,11 @@ export default function SettingsManager() {
     website_effect_speed: 'normal',
     website_effect_mobile: '1',
   })
+
+  // Tự động reset trạng thái lỗi ảnh khi người dùng đổi link ảnh
+  useEffect(() => {
+    setPreviewImgError(false)
+  }, [form?.seo_image])
 
   const fetchSettings = async () => {
     try {
