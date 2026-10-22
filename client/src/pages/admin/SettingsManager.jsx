@@ -26,8 +26,16 @@ import {
   Layers,
   ExternalLink,
   ImageIcon,
+  Snowflake,
+  Heart,
+  Leaf,
+  Flower2,
+  CircleDot,
+  Smartphone,
+  Monitor,
 } from 'lucide-react'
 import api from '../../utils/api'
+import WebsiteEffects from '../../components/ui/WebsiteEffects'
 import { useSettings } from '../../context/SettingsContext'
 
 export default function SettingsManager() {
@@ -39,6 +47,7 @@ export default function SettingsManager() {
   const [uploadingSeoImage, setUploadingSeoImage] = useState(false)
   const [previewImgError, setPreviewImgError] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
+  const [previewBgDark, setPreviewBgDark] = useState(false)
 
   // Tự động reset trạng thái lỗi ảnh khi người dùng đổi link ảnh
   useEffect(() => {
@@ -71,6 +80,10 @@ export default function SettingsManager() {
     page_album_enabled: '1',
     page_about_enabled: '1',
     page_contact_enabled: '1',
+    website_effect: 'none',
+    website_effect_density: 'medium',
+    website_effect_speed: 'normal',
+    website_effect_mobile: '1',
   })
 
   const fetchSettings = async () => {
@@ -146,6 +159,7 @@ export default function SettingsManager() {
 
   const tabs = [
     { id: 'branding', label: 'Thương Hiệu & Logo', icon: Camera },
+    { id: 'effects', label: 'Hiệu Ứng Website (Lễ Hội)', icon: Sparkles },
     { id: 'pages_visibility', label: 'Bật / Tắt Hiển Thị Trang', icon: Layers },
     { id: 'album_header', label: 'Tiêu Đề Trang Bộ Sưu Tập', icon: Images },
     { id: 'contact', label: 'Thông Tin Liên Hệ', icon: Phone },
@@ -292,6 +306,376 @@ export default function SettingsManager() {
           </div>
         )}
 
+
+        {/* Tab: Website Effects & Festival Particles */}
+        {activeTab === 'effects' && (
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 space-y-8 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h2 className="font-heading font-bold text-base text-slate-900">
+                    Hiệu Ứng Rơi Trang Trí Website & Mùa Lễ Hội
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Hiệu ứng hạt rơi chuyển động mượt mà (tuyết rơi Noel, tim bay, lá phong mùa thu, hoa đào xuân...) tăng cảm xúc thị giác cho khách thăm studio
+                  </p>
+                </div>
+              </div>
+
+              {/* Status pill */}
+              <div className="self-start sm:self-auto">
+                {form.website_effect && form.website_effect !== 'none' ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Đang bật hiệu ứng
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-xs font-medium">
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    Đang tắt hiệu ứng
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Live Interactive Preview Box */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <Monitor size={15} className="text-primary" />
+                  Khu Vực Xem Thử Hiệu Ứng Trực Tiếp (Live Preview)
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-slate-400 font-medium">Màu nền xem thử:</span>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewBgDark(false)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                      !previewBgDark
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    Nền Sáng
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewBgDark(true)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                      previewBgDark
+                        ? 'bg-slate-800 text-white border border-slate-700 shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    Nền Tối
+                  </button>
+                </div>
+              </div>
+
+              <div
+                className={`relative h-60 sm:h-72 rounded-3xl overflow-hidden border transition-colors duration-300 shadow-inner flex flex-col items-center justify-center text-center p-6 ${
+                  previewBgDark
+                    ? 'bg-slate-900 border-slate-800 text-white'
+                    : 'bg-gradient-to-b from-amber-50/70 via-white to-orange-50/40 border-amber-200/60 text-slate-800'
+                }`}
+              >
+                {/* Canvas Container */}
+                <WebsiteEffects
+                  effectOverride={form.website_effect || 'none'}
+                  densityOverride={form.website_effect_density || 'medium'}
+                  speedOverride={form.website_effect_speed || 'normal'}
+                  mobileOverride={form.website_effect_mobile || '1'}
+                  isContainerPreview={true}
+                />
+
+                {/* Mock Card Preview Content */}
+                <div className="relative z-10 max-w-md space-y-2 pointer-events-none select-none">
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                      previewBgDark
+                        ? 'bg-white/10 text-amber-300 border border-white/10 backdrop-blur-xs'
+                        : 'bg-primary/10 text-primary border border-primary/20 backdrop-blur-xs'
+                    }`}
+                  >
+                    {form.brand_name || 'QA Stories Baby Studio'}
+                  </span>
+                  <h3
+                    className={`font-heading font-extrabold text-xl sm:text-2xl ${
+                      previewBgDark ? 'text-white' : 'text-slate-900'
+                    }`}
+                  >
+                    Lưu Giữ Trọn Vẹn Khoảnh Khắc Đầu Đời
+                  </h3>
+                  <p
+                    className={`text-xs max-w-sm mx-auto leading-relaxed ${
+                      previewBgDark ? 'text-slate-300' : 'text-slate-600'
+                    }`}
+                  >
+                    {form.website_effect && form.website_effect !== 'none'
+                      ? 'Hiệu ứng đang hiển thị chuyển động trực tiếp theo các thông số bạn chọn bên dưới!'
+                      : 'Hiệu ứng đang được TẮT. Hãy chọn một hiệu ứng bên dưới để bắt đầu xem thử!'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Effect Selection Cards */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                1. Chọn Loại Hiệu Ứng Rơi / Bay
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {[
+                  {
+                    id: 'none',
+                    name: 'Tắt Hiệu Ứng',
+                    desc: 'Giao diện tĩnh thanh lịch, không hạt rơi.',
+                    icon: X,
+                    color: 'text-slate-500 bg-slate-100',
+                    tag: 'Không dùng',
+                  },
+                  {
+                    id: 'snow',
+                    name: 'Tuyết Rơi (Snowfall)',
+                    desc: 'Bông tuyết trắng & tinh thể tuyết lung linh.',
+                    icon: Snowflake,
+                    color: 'text-sky-600 bg-sky-50',
+                    tag: 'Mùa Đông & Noel',
+                  },
+                  {
+                    id: 'hearts',
+                    name: 'Trái Tim Bay (Hearts)',
+                    desc: 'Tim hồng đỏ ngọt ngào đong đầy tình yêu.',
+                    icon: Heart,
+                    color: 'text-rose-600 bg-rose-50',
+                    tag: 'Mẹ & Bé Yêu',
+                  },
+                  {
+                    id: 'leaves',
+                    name: 'Lá Phong Mùa Thu',
+                    desc: 'Lá phong màu vàng cam rơi bồng bềnh lãng mạn.',
+                    icon: Leaf,
+                    color: 'text-amber-700 bg-amber-50',
+                    tag: 'Mùa Thu Ấm Áp',
+                  },
+                  {
+                    id: 'sakura',
+                    name: 'Cánh Hoa Anh Đào',
+                    desc: 'Cánh hoa hồng phấn thướt tha trong gió xuân.',
+                    icon: Flower2,
+                    color: 'text-pink-600 bg-pink-50',
+                    tag: 'Mùa Xuân & Bé Gái',
+                  },
+                  {
+                    id: 'sparkles',
+                    name: 'Ánh Sao & Đom Đóm',
+                    desc: 'Hạt bụi tiên vàng lấp lánh như truyện cổ tích.',
+                    icon: Sparkles,
+                    color: 'text-yellow-600 bg-yellow-50',
+                    tag: 'Lung Linh Cổ Tích',
+                  },
+                  {
+                    id: 'bubbles',
+                    name: 'Bong Bóng Xà Phòng',
+                    desc: 'Bong bóng trong suốt óng ánh bay nhẹ từ dưới lên.',
+                    icon: CircleDot,
+                    color: 'text-indigo-600 bg-indigo-50',
+                    tag: 'Đáng Yêu & Vui Tươi',
+                  },
+                  {
+                    id: 'tet',
+                    name: 'Hoa Mai & Hoa Đào Tết',
+                    desc: 'Sắc hoa xuân sum vầy đón năm mới bình an.',
+                    icon: Sparkles,
+                    color: 'text-red-600 bg-red-50',
+                    tag: 'Tết Nguyên Đán',
+                  },
+                ].map((eff) => {
+                  const Icon = eff.icon
+                  const isSelected = (form.website_effect || 'none') === eff.id
+
+                  return (
+                    <div
+                      key={eff.id}
+                      onClick={() => setForm({ ...form, website_effect: eff.id })}
+                      className={`relative p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between text-left group ${
+                        isSelected
+                          ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                          : 'border-slate-200/80 bg-white hover:border-slate-300 hover:bg-slate-50/60'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2.5">
+                          <div
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${eff.color}`}
+                          >
+                            <Icon size={18} />
+                          </div>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isSelected
+                                ? 'bg-primary text-white'
+                                : 'bg-slate-100 text-slate-500'
+                            }`}
+                          >
+                            {eff.tag}
+                          </span>
+                        </div>
+                        <h4 className="font-heading font-bold text-xs text-slate-900 group-hover:text-primary transition-colors">
+                          {eff.name}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                          {eff.desc}
+                        </p>
+                      </div>
+
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                        <span
+                          className={`text-[11px] font-semibold flex items-center gap-1 ${
+                            isSelected ? 'text-primary' : 'text-slate-400'
+                          }`}
+                        >
+                          {isSelected ? (
+                            <>
+                              <CheckCircle2 size={13} className="text-primary" />
+                              Đang áp dụng
+                            </>
+                          ) : (
+                            'Bấm để chọn'
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Fine-Tuning Controls */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              {/* Density */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                  2. Mật Độ Hạt (Particle Density)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'low', label: 'Ít / Nhẹ nhàng', sub: '~25 hạt' },
+                    { id: 'medium', label: 'Vừa phải', sub: '~45 hạt' },
+                    { id: 'high', label: 'Dày đặc', sub: '~75 hạt' },
+                  ].map((d) => {
+                    const isSelected = (form.website_effect_density || 'medium') === d.id
+                    return (
+                      <button
+                        type="button"
+                        key={d.id}
+                        onClick={() => setForm({ ...form, website_effect_density: d.id })}
+                        className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                            : 'border-slate-200 bg-slate-50 hover:bg-white text-slate-600'
+                        }`}
+                      >
+                        <div className="text-xs">{d.label}</div>
+                        <div className="text-[10px] opacity-75 mt-0.5">{d.sub}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Speed */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                  3. Tốc Độ Chuyển Động (Speed)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'slow', label: 'Chậm rãi', sub: 'Thơ mộng' },
+                    { id: 'normal', label: 'Tự nhiên', sub: 'Khuyên dùng' },
+                    { id: 'fast', label: 'Nhanh', sub: 'Sống động' },
+                  ].map((s) => {
+                    const isSelected = (form.website_effect_speed || 'normal') === s.id
+                    return (
+                      <button
+                        type="button"
+                        key={s.id}
+                        onClick={() => setForm({ ...form, website_effect_speed: s.id })}
+                        className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                            : 'border-slate-200 bg-slate-50 hover:bg-white text-slate-600'
+                        }`}
+                      >
+                        <div className="text-xs">{s.label}</div>
+                        <div className="text-[10px] opacity-75 mt-0.5">{s.sub}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Mobile Optimization */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
+                  <Smartphone size={14} className="text-primary" />
+                  4. Thiết Bị Di Động
+                </label>
+                <div
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      website_effect_mobile: form.website_effect_mobile === '1' ? '0' : '1',
+                    })
+                  }
+                  className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                    form.website_effect_mobile === '1'
+                      ? 'border-emerald-300 bg-emerald-50/60'
+                      : 'border-slate-200 bg-slate-50'
+                  }`}
+                >
+                  <div className="pr-2">
+                    <div className="text-xs font-bold text-slate-800">
+                      {form.website_effect_mobile === '1'
+                        ? 'Đang bật trên điện thoại'
+                        : 'Tắt trên điện thoại'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      {form.website_effect_mobile === '1'
+                        ? 'Tự động giảm 50% hạt để tiết kiệm pin & mượt mà'
+                        : 'Chỉ hiển thị trên máy tính (desktop/laptop)'}
+                    </div>
+                  </div>
+
+                  <div
+                    className={`w-11 h-6 rounded-full transition-colors flex items-center p-1 shrink-0 ${
+                      form.website_effect_mobile === '1' ? 'bg-emerald-500 justify-end' : 'bg-slate-300 justify-start'
+                    }`}
+                  >
+                    <div className="w-4 h-4 rounded-full bg-white shadow-xs"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Informational Box */}
+            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-amber-900 text-xs flex items-start gap-3">
+              <Sparkles className="shrink-0 text-amber-600 mt-0.5" size={17} />
+              <div className="space-y-1 text-[11px] leading-relaxed">
+                <p className="font-semibold text-amber-950">
+                  Lưu ý về hiệu năng & trải nghiệm người dùng:
+                </p>
+                <p className="text-amber-800">
+                  Hiệu ứng được xây dựng trên công nghệ <strong>HTML5 Canvas siêu nhẹ</strong>, lớp phủ hoàn toàn không chặn thao tác click (pointer-events: none), tự động tạm dừng khi khách chuyển sang tab trình duyệt khác để không gây nóng máy hoặc tốn CPU.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Tab: Pages Visibility Management */}
         {activeTab === 'pages_visibility' && (
           <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">

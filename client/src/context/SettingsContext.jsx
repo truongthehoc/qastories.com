@@ -54,6 +54,10 @@ const defaultSettings = {
     { id: 'qa-2', label: 'Đặt Lịch Chụp Ảnh', to: '/contact', icon: 'Calendar', is_active: true },
     { id: 'qa-3', label: 'Liên Hệ & Tư Vấn', to: '/contact', icon: 'PhoneCall', is_active: true },
   ]),
+  website_effect: 'none',
+  website_effect_density: 'medium',
+  website_effect_speed: 'normal',
+  website_effect_mobile: '1',
 }
 
 const SettingsContext = createContext(null)

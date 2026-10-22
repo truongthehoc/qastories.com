@@ -5,6 +5,7 @@ import Footer from './components/layout/Footer'
 import ScrollToTop from './components/ui/ScrollToTop'
 import FloatingContact from './components/ui/FloatingContact'
 import QuickAccess from './components/ui/QuickAccess'
+import WebsiteEffects from './components/ui/WebsiteEffects'
 import { SettingsProvider } from './context/SettingsContext'
 import { AdminAuthProvider } from './context/AdminAuthContext'
 import usePageTracking from './hooks/usePageTracking'
@@ -60,6 +61,7 @@ function PublicLayout() {
       <ScrollToTop />
       <QuickAccess />
       <FloatingContact />
+      <WebsiteEffects />
     </div>
   )
 }

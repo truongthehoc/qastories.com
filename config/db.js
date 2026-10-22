@@ -38,6 +38,16 @@ export const ensureDbSchema = async () => {
       await pool.query('ALTER TABLE photos ADD COLUMN likes INT DEFAULT 0 AFTER sort_order')
       console.log('✅ [MySQL Auto-Migration] Đã tự động thêm cột likes vào bảng photos!')
     }
+
+    // 3. Khởi tạo giá trị mặc định cho hiệu ứng website nếu chưa tồn tại
+    await pool.query(`
+      INSERT IGNORE INTO system_settings (setting_key, setting_value, setting_group) VALUES
+      ('website_effect', 'none', 'effects'),
+      ('website_effect_density', 'medium', 'effects'),
+      ('website_effect_speed', 'normal', 'effects'),
+      ('website_effect_mobile', '1', 'effects')
+    `)
+
     return true
   } catch (error) {
     console.warn(`⚠️ [MySQL Auto-Migration] Lỗi nâng cấp bảng: ${error.message}`)
