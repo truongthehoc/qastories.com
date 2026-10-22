@@ -13,12 +13,14 @@ export class Photo {
   }
 
   static async toggleLike(id, action = 'like') {
+    const numId = parseInt(id, 10)
+    if (!numId || isNaN(numId)) return null
     if (action === 'unlike') {
-      await pool.execute('UPDATE photos SET likes = GREATEST(0, COALESCE(likes, 0) - 1) WHERE id = ?', [id])
+      await pool.execute('UPDATE photos SET likes = GREATEST(0, COALESCE(likes, 0) - 1) WHERE id = ?', [numId])
     } else {
-      await pool.execute('UPDATE photos SET likes = COALESCE(likes, 0) + 1 WHERE id = ?', [id])
+      await pool.execute('UPDATE photos SET likes = COALESCE(likes, 0) + 1 WHERE id = ?', [numId])
     }
-    const [rows] = await pool.execute('SELECT id, album_id, likes FROM photos WHERE id = ?', [id])
+    const [rows] = await pool.execute('SELECT id, album_id, likes FROM photos WHERE id = ?', [numId])
     return rows[0] || null
   }
 

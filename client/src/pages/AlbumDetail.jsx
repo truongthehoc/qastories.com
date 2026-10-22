@@ -126,50 +126,61 @@ export default function AlbumDetail() {
   const [likedAlbums, setLikedAlbums] = useState(() => getLikedAlbums())
   const [likedPhotos, setLikedPhotos] = useState(() => getLikedPhotos())
 
-  const isAlbumLiked = album ? (likedAlbums.includes(album.id) || likedAlbums.includes(album.slug)) : false
-  const isPhotoLiked = (photoId) => likedPhotos.includes(photoId)
-
-  // Track album view (lượt xem) once per session
-  useEffect(() => {
-    if (!album?.id) return
-    const sessionKey = `qastories_viewed_album_${album.id}`
-    if (!sessionStorage.getItem(sessionKey)) {
-      sessionStorage.setItem(sessionKey, '1')
-      api.post(`/albums/${album.id}/view`)
-        .then((res) => {
-          if (res?.success && res?.data?.views !== undefined) {
-            setAlbum((prev) => (prev ? { ...prev, views: res.data.views } : prev))
-          }
-        })
-        .catch(() => {})
-    }
-  }, [album?.id])
+  const isAlbumLiked = album
+    ? likedAlbums.some(
+        (aId) =>
+          String(aId) === String(album.id) ||
+          String(aId) === String(album.slug)
+      )
+    : false
+  const isPhotoLiked = (photoId) => likedPhotos.some((pId) => String(pId) === String(photoId))
 
   // Thả tym / Bỏ tym cho album
   const handleLikeAlbum = async () => {
-    if (!album?.id) return
+    if (!album?.id && !album?.slug) return
+    const targetId = album.id || album.slug
     const currentlyLiked = isAlbumLiked
     const action = currentlyLiked ? 'unlike' : 'like'
     const newLiked = currentlyLiked
-      ? likedAlbums.filter((aId) => aId !== album.id && aId !== album.slug)
-      : [...likedAlbums, album.id]
+      ? likedAlbums.filter((aId) => String(aId) !== String(album.id) && String(aId) !== String(album.slug))
+      : [...likedAlbums, album.id || album.slug]
 
     setLikedAlbums(newLiked)
     try {
       localStorage.setItem('qastories_liked_albums', JSON.stringify(newLiked))
     } catch {}
 
+    const newLikes = Math.max(0, (Number(album.likes) || 0) + (currentlyLiked ? -1 : 1))
+
     // Cập nhật giao diện tức thì
-    setAlbum((prev) => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        likes: Math.max(0, (Number(prev.likes) || 0) + (currentlyLiked ? -1 : 1)),
+    setAlbum((prev) => (prev ? { ...prev, likes: newLikes } : prev))
+
+    // Đồng bộ vào localStorage để khi reload không bị mất số tym
+    try {
+      const raw = localStorage.getItem('qastories_cached_albums')
+      if (raw) {
+        const list = JSON.parse(raw)
+        if (Array.isArray(list)) {
+          const updated = list.map((a) =>
+            String(a.id) === String(album.id) || a.slug === album.slug ? { ...a, likes: newLikes } : a
+          )
+          localStorage.setItem('qastories_cached_albums', JSON.stringify(updated))
+        }
       }
-    })
+      const rawFormatted = localStorage.getItem('qastories_cached_albums_formatted')
+      if (rawFormatted) {
+        const list = JSON.parse(rawFormatted)
+        if (Array.isArray(list)) {
+          const updated = list.map((a) =>
+            String(a.id) === String(album.id) || a.slug === album.slug ? { ...a, likes: newLikes } : a
+          )
+          localStorage.setItem('qastories_cached_albums_formatted', JSON.stringify(updated))
+        }
+      }
+    } catch {}
 
     try {
-      const res = await api.post(`/albums/${album.id}/like`, { action })
+      const res = await api.post(`/albums/${targetId}/like`, { action })
       if (res?.success && res?.data?.likes !== undefined) {
         setAlbum((prev) => (prev ? { ...prev, likes: res.data.likes } : prev))
       }
@@ -186,7 +197,7 @@ export default function AlbumDetail() {
     const currentlyLiked = isPhotoLiked(photoId)
     const action = currentlyLiked ? 'unlike' : 'like'
     const newLiked = currentlyLiked
-      ? likedPhotos.filter((pId) => pId !== photoId)
+      ? likedPhotos.filter((pId) => String(pId) !== String(photoId))
       : [...likedPhotos, photoId]
 
     setLikedPhotos(newLiked)
@@ -199,7 +210,7 @@ export default function AlbumDetail() {
     setAlbum((prev) => {
       if (!prev || !prev.gallery) return prev
       const newGallery = prev.gallery.map((p) => {
-        if (p.id === photoId) {
+        if (String(p.id) === String(photoId)) {
           return {
             ...p,
             likes: Math.max(0, (Number(p.likes) || 0) + (currentlyLiked ? -1 : 1)),
@@ -213,7 +224,17 @@ export default function AlbumDetail() {
     })
 
     try {
-      await api.post(`/albums/photos/${photoId}/like`, { action })
+      const res = await api.post(`/albums/photos/${photoId}/like`, { action })
+      if (res?.success && res?.data?.likes !== undefined) {
+        setAlbum((prev) => {
+          if (!prev || !prev.gallery) return prev
+          const newGallery = prev.gallery.map((p) =>
+            String(p.id) === String(photoId) ? { ...p, likes: res.data.likes } : p
+          )
+          newGallery.sort((a, b) => (Number(b.likes) || 0) - (Number(a.likes) || 0))
+          return { ...prev, gallery: newGallery }
+        })
+      }
     } catch (err) {
       console.warn('Lỗi thả tym ảnh:', err)
     }
@@ -270,8 +291,8 @@ export default function AlbumDetail() {
     const fetchDetail = async () => {
       try {
         const [detailRes, listRes] = await Promise.all([
-          api.get(`/albums/detail/${id}`),
-          api.get('/albums'),
+          api.get(`/albums/detail/${id}`, { bypassCache: true }),
+          api.get('/albums', { bypassCache: true }),
         ])
 
         if (!isMounted) return
@@ -322,6 +343,32 @@ export default function AlbumDetail() {
             gallery,
           }
           setAlbum(formatted)
+
+          // Đồng bộ vào cache để các trang khác và reload không bao giờ bị hiển thị 0
+          try {
+            const raw = localStorage.getItem('qastories_cached_albums')
+            if (raw) {
+              const list = JSON.parse(raw)
+              if (Array.isArray(list)) {
+                const idx = list.findIndex((a) => String(a.id) === String(item.id) || a.slug === item.slug)
+                if (idx !== -1) {
+                  list[idx] = { ...list[idx], views: formatted.views, likes: formatted.likes }
+                  localStorage.setItem('qastories_cached_albums', JSON.stringify(list))
+                }
+              }
+            }
+            const rawFormatted = localStorage.getItem('qastories_cached_albums_formatted')
+            if (rawFormatted) {
+              const list = JSON.parse(rawFormatted)
+              if (Array.isArray(list)) {
+                const idx = list.findIndex((a) => String(a.id) === String(item.id) || a.slug === item.slug)
+                if (idx !== -1) {
+                  list[idx] = { ...list[idx], views: formatted.views, likes: formatted.likes }
+                  localStorage.setItem('qastories_cached_albums_formatted', JSON.stringify(list))
+                }
+              }
+            }
+          } catch {}
         }
       } catch (err) {
         // Fallback to local

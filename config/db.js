@@ -14,12 +14,44 @@ const pool = mysql.createPool({
   queueLimit: 0,
 })
 
-// Kiểm tra kết nối MySQL khi khởi động
+// Tự động kiểm tra và nâng cấp các cột cần thiết cho albums & photos khi máy chủ khởi động
+export const ensureDbSchema = async () => {
+  try {
+    // 1. Kiểm tra bảng albums
+    const [albumCols] = await pool.query('SHOW COLUMNS FROM albums')
+    const albumFields = albumCols.map((c) => c.Field)
+
+    if (!albumFields.includes('views')) {
+      await pool.query('ALTER TABLE albums ADD COLUMN views INT DEFAULT 0 AFTER sort_order')
+      console.log('✅ [MySQL Auto-Migration] Đã tự động thêm cột views vào bảng albums!')
+    }
+    if (!albumFields.includes('likes')) {
+      await pool.query('ALTER TABLE albums ADD COLUMN likes INT DEFAULT 0 AFTER views')
+      console.log('✅ [MySQL Auto-Migration] Đã tự động thêm cột likes vào bảng albums!')
+    }
+
+    // 2. Kiểm tra bảng photos
+    const [photoCols] = await pool.query('SHOW COLUMNS FROM photos')
+    const photoFields = photoCols.map((c) => c.Field)
+
+    if (!photoFields.includes('likes')) {
+      await pool.query('ALTER TABLE photos ADD COLUMN likes INT DEFAULT 0 AFTER sort_order')
+      console.log('✅ [MySQL Auto-Migration] Đã tự động thêm cột likes vào bảng photos!')
+    }
+    return true
+  } catch (error) {
+    console.warn(`⚠️ [MySQL Auto-Migration] Lỗi nâng cấp bảng: ${error.message}`)
+    return false
+  }
+}
+
+// Kiểm tra kết nối MySQL khi khởi động và tự động đồng bộ schema
 export const testConnection = async () => {
   try {
     const connection = await pool.getConnection()
     console.log('✅ [MySQL] Kết nối cơ sở dữ liệu MySQL thành công!')
     connection.release()
+    await ensureDbSchema()
     return true
   } catch (error) {
     console.warn(`⚠️ [MySQL] Chưa thể kết nối tới MySQL (${error.message}). Vui lòng kiểm tra file .env hoặc chạy 'npm run setup:db'.`)

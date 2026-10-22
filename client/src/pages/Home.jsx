@@ -114,10 +114,10 @@ export default function Home() {
     e.stopPropagation()
     if (!albumId) return
 
-    const currentlyLiked = likedAlbums.includes(albumId)
+    const currentlyLiked = likedAlbums.some((id) => String(id) === String(albumId))
     const action = currentlyLiked ? 'unlike' : 'like'
     const newLiked = currentlyLiked
-      ? likedAlbums.filter((id) => id !== albumId)
+      ? likedAlbums.filter((id) => String(id) !== String(albumId))
       : [...likedAlbums, albumId]
 
     setLikedAlbums(newLiked)
@@ -125,23 +125,36 @@ export default function Home() {
       localStorage.setItem('qastories_liked_albums', JSON.stringify(newLiked))
     } catch {}
 
+    const updatedLikes = Math.max(0, (Number(albums.find((a) => String(a.id) === String(albumId))?.likes) || 0) + (currentlyLiked ? -1 : 1))
+
     setAlbums((prev) =>
       prev.map((a) => {
-        if (a.id === albumId) {
-          return {
-            ...a,
-            likes: Math.max(0, (Number(a.likes) || 0) + (currentlyLiked ? -1 : 1)),
-          }
+        if (String(a.id) === String(albumId)) {
+          return { ...a, likes: updatedLikes }
         }
         return a
       })
     )
 
+    // Đồng bộ vào localStorage để khi reload không bị quay về 0
+    try {
+      const raw = localStorage.getItem('qastories_cached_albums')
+      if (raw) {
+        const list = JSON.parse(raw)
+        if (Array.isArray(list)) {
+          const updated = list.map((a) =>
+            String(a.id) === String(albumId) ? { ...a, likes: updatedLikes } : a
+          )
+          localStorage.setItem('qastories_cached_albums', JSON.stringify(updated))
+        }
+      }
+    } catch {}
+
     try {
       const res = await api.post(`/albums/${albumId}/like`, { action })
       if (res?.success && res?.data?.likes !== undefined) {
         setAlbums((prev) =>
-          prev.map((a) => (a.id === albumId ? { ...a, likes: res.data.likes } : a))
+          prev.map((a) => (String(a.id) === String(albumId) ? { ...a, likes: res.data.likes } : a))
         )
       }
     } catch (err) {
@@ -153,7 +166,7 @@ export default function Home() {
     let isMounted = true
     const fetchAlbums = async () => {
       try {
-        const res = await api.get('/albums?featured=true')
+        const res = await api.get('/albums?featured=true', { bypassCache: true })
         if (isMounted && res.success && res.data && res.data.length > 0) {
           setAlbums(res.data)
           try {
@@ -450,16 +463,16 @@ export default function Home() {
                               type="button"
                               onClick={(e) => handleToggleLike(e, album.id)}
                               className={`backdrop-blur-md text-xs font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1 transition-all duration-200 cursor-pointer shadow-sm ${
-                                likedAlbums.includes(album.id)
+                                likedAlbums.some((id) => String(id) === String(album.id))
                                   ? 'bg-rose-500 text-white shadow-rose-500/30 scale-105'
                                   : 'bg-black/45 hover:bg-black/65 text-white border border-white/20 hover:scale-105'
                               }`}
-                              title={likedAlbums.includes(album.id) ? 'Bỏ thích album' : 'Thả tim album này'}
+                              title={likedAlbums.some((id) => String(id) === String(album.id)) ? 'Bỏ thích album' : 'Thả tim album này'}
                             >
                               <Heart
                                 size={12}
                                 className={`transition-transform duration-200 ${
-                                  likedAlbums.includes(album.id) ? 'fill-white text-white' : 'text-rose-400'
+                                  likedAlbums.some((id) => String(id) === String(album.id)) ? 'fill-white text-white' : 'text-rose-400'
                                 }`}
                               />
                               <span>{album.likes || 0}</span>

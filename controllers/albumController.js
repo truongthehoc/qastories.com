@@ -9,6 +9,7 @@ export const getPublicAlbums = async (req, res, next) => {
       featured: featured === 'true' || featured === '1',
       sortBy: sort,
     })
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
     res.json({ success: true, data: albums })
   } catch (error) {
     next(error)
@@ -22,6 +23,20 @@ export const getPublicAlbumBySlug = async (req, res, next) => {
     if (!album) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy album' })
     }
+
+    // Tự động tăng lượt xem album trên máy chủ ngay khi người dùng truy cập
+    try {
+      const updated = await Album.incrementViews(album.id)
+      if (updated?.views !== undefined) {
+        album.views = updated.views
+      } else {
+        album.views = (album.views || 0) + 1
+      }
+    } catch (e) {
+      console.warn('Không thể tăng lượt xem album:', e.message)
+    }
+
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
     res.json({ success: true, data: album })
   } catch (error) {
     next(error)
