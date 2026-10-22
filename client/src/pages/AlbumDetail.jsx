@@ -26,23 +26,108 @@ function normalizeUrl(url) {
   return url.startsWith('/') ? url : `/${url}`
 }
 
+function getInitialAlbum(id) {
+  if (!id) return null
+  const numId = parseInt(id, 10)
+
+  // 1. Kiểm tra cache album đã format từ trang /album
+  try {
+    const cachedFormatted = localStorage.getItem('qastories_cached_albums_formatted')
+    if (cachedFormatted) {
+      const list = JSON.parse(cachedFormatted)
+      if (Array.isArray(list)) {
+        const found = list.find((a) => a.id === numId || a.slug === id || String(a.id) === id)
+        if (found) return found
+      }
+    }
+  } catch {}
+
+  // 2. Kiểm tra cache album gốc từ trang chủ hoặc API
+  try {
+    const cachedRaw = localStorage.getItem('qastories_cached_albums')
+    if (cachedRaw) {
+      const list = JSON.parse(cachedRaw)
+      if (Array.isArray(list)) {
+        const item = list.find((a) => a.id === numId || a.slug === id || String(a.id) === id)
+        if (item) {
+          return {
+            id: item.id,
+            slug: item.slug || `album-${item.id}`,
+            title: item.title,
+            category: item.category,
+            categoryLabel: item.category_label || item.categoryLabel || item.category,
+            cover: normalizeUrl(item.cover_image || item.cover_url || item.cover),
+            desc: item.description || item.desc || item.story || '',
+            story: item.story || item.description || item.desc || '',
+            date: item.date_shot || item.date || '',
+            location: item.location || 'Bình Dương',
+            packageName: item.package_name || item.packageName || 'Gói Chụp Nghệ Thuật',
+            gallery: (item.photos && item.photos.length > 0)
+              ? item.photos.map((p) => ({
+                  src: normalizeUrl(p.url || p.photo_url || p.src || p.photoUrl),
+                  title: p.title || item.title,
+                  desc: p.description || item.desc || '',
+                }))
+              : [{ src: normalizeUrl(item.cover_image || item.cover_url || item.cover), title: item.title, desc: item.description || item.desc || '' }],
+          }
+        }
+      }
+    }
+  } catch {}
+
+  // 3. Fallback vào defaultAlbums
+  const local = defaultAlbums.find(
+    (a) => a.id === numId || a.slug === id || String(a.id) === id
+  )
+  if (local) return local
+
+  return null
+}
+
 export default function AlbumDetail() {
   const { settings } = useSettings()
   const { id } = useParams()
   const navigate = useNavigate()
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
-  const [album, setAlbum] = useState(() => {
-    return defaultAlbums.find(
-      (a) => a.id === parseInt(id, 10) || a.slug === id
-    ) || null
+
+  // Khởi tạo ngay lập tức từ cache nếu có để tránh giật giao diện "Không tìm thấy"
+  const [album, setAlbum] = useState(() => getInitialAlbum(id))
+  const [loading, setLoading] = useState(() => !getInitialAlbum(id))
+
+  const [allAlbums, setAllAlbums] = useState(() => {
+    try {
+      const cached =
+        localStorage.getItem('qastories_cached_albums_formatted') ||
+        localStorage.getItem('qastories_cached_albums')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((item) => ({
+            id: item.id,
+            slug: item.slug || `album-${item.id}`,
+            title: item.title,
+            category: item.category,
+            categoryLabel: item.category_label || item.categoryLabel || item.category,
+            cover: normalizeUrl(item.cover_image || item.cover_url || item.cover),
+            desc: item.description || item.desc || item.story || '',
+          }))
+        }
+      }
+    } catch {}
+    return []
   })
 
-  const [allAlbums, setAllAlbums] = useState([])
-
-  // Scroll to top on load or id change
+  // Scroll to top và đồng bộ album mới khi đổi id
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
+    const initial = getInitialAlbum(id)
+    if (initial) {
+      setAlbum(initial)
+      setLoading(false)
+    } else {
+      setLoading(true)
+    }
   }, [id])
 
   const formatDateDisplay = (dateVal) => {
@@ -106,11 +191,11 @@ export default function AlbumDetail() {
           setAlbum(formatted)
         }
       } catch (err) {
-        // Fallback to local defaultAlbums
-        const local = defaultAlbums.find(
-          (a) => a.id === parseInt(id, 10) || a.slug === id
-        )
+        // Fallback to local
+        const local = getInitialAlbum(id)
         if (local && isMounted) setAlbum(local)
+      } finally {
+        if (isMounted) setLoading(false)
       }
     }
     fetchDetail()
@@ -123,6 +208,15 @@ export default function AlbumDetail() {
     setLightboxIndex(index)
     setLightboxOpen(true)
   }, [])
+
+  if (loading && !album) {
+    return (
+      <div className="pt-32 pb-24 min-h-[70vh] flex flex-col items-center justify-center text-center px-4 bg-offwhite/40">
+        <div className="w-10 h-10 border-3 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
+        <p className="font-body text-gray-500 text-sm">Đang tải thông tin album...</p>
+      </div>
+    )
+  }
 
   if (!album) {
     return (
