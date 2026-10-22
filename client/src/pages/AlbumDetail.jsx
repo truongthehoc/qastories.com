@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
@@ -239,6 +239,36 @@ export default function AlbumDetail() {
       console.warn('Lỗi thả tym ảnh:', err)
     }
   }
+
+  // Đếm số cột theo độ rộng màn hình để phân bổ ảnh theo thứ tự từ trái qua phải, từ trên xuống dưới
+  const [colCount, setColCount] = useState(() => {
+    if (typeof window === 'undefined') return 3
+    if (window.innerWidth < 640) return 1
+    if (window.innerWidth < 1024) return 2
+    return 3
+  })
+
+  useEffect(() => {
+    const updateCols = () => {
+      const w = window.innerWidth
+      if (w < 640) setColCount(1)
+      else if (w < 1024) setColCount(2)
+      else setColCount(3)
+    }
+    updateCols()
+    window.addEventListener('resize', updateCols)
+    return () => window.removeEventListener('resize', updateCols)
+  }, [])
+
+  // Phân chia ảnh vào các cột theo thứ tự giảm dần từ trái qua phải, từ trên xuống dưới
+  const galleryColumns = useMemo(() => {
+    if (!album?.gallery || !Array.isArray(album.gallery)) return []
+    const cols = Array.from({ length: colCount }, () => [])
+    album.gallery.forEach((photo, idx) => {
+      cols[idx % colCount].push({ photo, originalIndex: idx })
+    })
+    return cols
+  }, [album?.gallery, colCount])
 
   const [allAlbums, setAllAlbums] = useState(() => {
     try {
@@ -560,94 +590,94 @@ export default function AlbumDetail() {
       {/* 2. Photo Gallery Grid */}
       <section className="py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Masonry Photo Gallery - Hiển thị đúng tỉ lệ ảnh gốc */}
-          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 sm:gap-8 [column-fill:_balance]">
-            {album.gallery.map((photo, index) => (
-              <div
-                key={`${photo.src || ''}_${index}`}
-                className="break-inside-avoid mb-6 sm:mb-8"
-              >
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '50px' }}
-                  transition={{ duration: 0.5, delay: (index % 3) * 0.08 }}
-                  onClick={() => handleOpenLightbox(index)}
-                  className="group relative rounded-3xl overflow-hidden shadow-md bg-white border border-orange-100/70 card-hover cursor-pointer"
-                >
-                  <div className="overflow-hidden bg-gray-100">
-                    <img
-                      src={photo.src}
-                      alt={photo.title || album.title}
-                      onError={(e) => {
-                        e.target.onerror = null
-                        if (!e.target.dataset.retried) {
-                          e.target.dataset.retried = 'true'
-                          const cleanSrc = photo.src.split('?')[0]
-                          e.target.src = `${cleanSrc}?t=${Date.now()}`
-                        }
-                      }}
-                      className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-
-                  {/* Top 1 Most Liked Badge */}
-                  {index === 0 && (Number(photo.likes) || 0) > 0 && (
-                    <div className="absolute top-3 left-3 z-20 pointer-events-none">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/95 text-white backdrop-blur-md shadow-md border border-amber-300/40">
-                        👑 Top 1 Tym
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Thả tym cho bức ảnh bất kỳ trong album */}
-                  {photo.id ? (
-                    <button
-                      type="button"
-                      onClick={(e) => handleLikePhoto(e, photo.id)}
-                      className={`absolute top-3 right-3 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md ${
-                        isPhotoLiked(photo.id)
-                          ? 'bg-rose-500 text-white shadow-rose-500/30 scale-105'
-                          : 'bg-black/45 hover:bg-black/65 text-white border border-white/25 hover:scale-105'
-                      }`}
-                      title={isPhotoLiked(photo.id) ? 'Bỏ tym bức ảnh này' : 'Thả tym cho bức ảnh này'}
-                    >
-                      <Heart
-                        size={13}
-                        className={`transition-transform duration-200 ${
-                          isPhotoLiked(photo.id) ? 'fill-white text-white scale-110' : 'text-rose-400'
-                        }`}
+          {/* Gallery Masonry - Sắp xếp giảm dần từ trái qua phải, từ trên xuống dưới */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
+            {galleryColumns.map((colPhotos, colIdx) => (
+              <div key={colIdx} className="flex flex-col gap-6 sm:gap-8">
+                {colPhotos.map(({ photo, originalIndex }) => (
+                  <motion.div
+                    key={`${photo.src || ''}_${originalIndex}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '50px' }}
+                    transition={{ duration: 0.5, delay: colIdx * 0.08 }}
+                    onClick={() => handleOpenLightbox(originalIndex)}
+                    className="group relative rounded-3xl overflow-hidden shadow-md bg-white border border-orange-100/70 card-hover cursor-pointer"
+                  >
+                    <div className="overflow-hidden bg-gray-100">
+                      <img
+                        src={photo.src}
+                        alt={photo.title || album.title}
+                        onError={(e) => {
+                          e.target.onerror = null
+                          if (!e.target.dataset.retried) {
+                            e.target.dataset.retried = 'true'
+                            const cleanSrc = photo.src.split('?')[0]
+                            e.target.src = `${cleanSrc}?t=${Date.now()}`
+                          }
+                        }}
+                        className="w-full h-auto block transition-transform duration-700 group-hover:scale-105"
+                        loading="lazy"
+                        decoding="async"
                       />
-                      <span>{photo.likes || 0}</span>
-                    </button>
-                  ) : null}
-
-                  {/* Hover overlay with zoom icon */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-5 sm:p-6 pointer-events-none">
-                    <div className="self-end">
-                      <div className="w-10 h-10 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg">
-                        <ZoomIn size={20} />
-                      </div>
                     </div>
 
-                    {(photo.title || photo.desc) && (
-                      <div>
-                        {photo.title && (
-                          <h3 className="font-heading font-bold text-white text-base sm:text-lg leading-snug line-clamp-1">
-                            {photo.title}
-                          </h3>
-                        )}
-                        {photo.desc && (
-                          <p className="font-body text-white/80 text-xs mt-1 line-clamp-2">
-                            {photo.desc}
-                          </p>
-                        )}
+                    {/* Top 1 Most Liked Badge */}
+                    {originalIndex === 0 && (Number(photo.likes) || 0) > 0 && (
+                      <div className="absolute top-3 left-3 z-20 pointer-events-none">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/95 text-white backdrop-blur-md shadow-md border border-amber-300/40">
+                          👑 Top 1 Tym
+                        </span>
                       </div>
                     )}
-                  </div>
-                </motion.div>
+
+                    {/* Thả tym cho bức ảnh bất kỳ trong album */}
+                    {photo.id ? (
+                      <button
+                        type="button"
+                        onClick={(e) => handleLikePhoto(e, photo.id)}
+                        className={`absolute top-3 right-3 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md ${
+                          isPhotoLiked(photo.id)
+                            ? 'bg-rose-500 text-white shadow-rose-500/30 scale-105'
+                            : 'bg-black/45 hover:bg-black/65 text-white border border-white/25 hover:scale-105'
+                        }`}
+                        title={isPhotoLiked(photo.id) ? 'Bỏ tym bức ảnh này' : 'Thả tym cho bức ảnh này'}
+                      >
+                        <Heart
+                          size={13}
+                          className={`transition-transform duration-200 ${
+                            isPhotoLiked(photo.id) ? 'fill-white text-white scale-110' : 'text-rose-400'
+                          }`}
+                        />
+                        <span>{photo.likes || 0}</span>
+                      </button>
+                    ) : null}
+
+                    {/* Hover overlay with zoom icon */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-5 sm:p-6 pointer-events-none">
+                      <div className="self-end">
+                        <div className="w-10 h-10 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg">
+                          <ZoomIn size={20} />
+                        </div>
+                      </div>
+
+                      {(photo.title || photo.desc) && (
+                        <div>
+                          {photo.title && (
+                            <h3 className="font-heading font-bold text-white text-base sm:text-lg leading-snug line-clamp-1">
+                              {photo.title}
+                            </h3>
+                          )}
+                          {photo.desc && (
+                            <p className="font-body text-white/80 text-xs mt-1 line-clamp-2">
+                              {photo.desc}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             ))}
           </div>
