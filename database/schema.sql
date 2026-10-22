@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS `albums` (
   `story` TEXT NULL,
   `is_featured` TINYINT(1) DEFAULT 1,
   `sort_order` INT DEFAULT 0,
+  `views` INT DEFAULT 0,
+  `likes` INT DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -81,6 +83,7 @@ CREATE TABLE IF NOT EXISTS `photos` (
   `title` VARCHAR(255) NULL,
   `description` TEXT NULL,
   `sort_order` INT DEFAULT 0,
+  `likes` INT DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`album_id`) REFERENCES `albums`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -120,6 +123,7 @@ CREATE TABLE IF NOT EXISTS `packages` (
   `is_featured` TINYINT(1) DEFAULT 0 COMMENT 'Gói nổi bật khuyên dùng',
   `is_active` TINYINT(1) DEFAULT 1 COMMENT 'Trạng thái mở nhận lịch',
   `sort_order` INT DEFAULT 0,
+  `likes` INT DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

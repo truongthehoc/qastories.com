@@ -25,6 +25,8 @@ export class Analytics {
 
     const [[totalAlbums]] = await pool.query('SELECT COUNT(*) as count FROM albums')
     const [[totalPhotos]] = await pool.query('SELECT COUNT(*) as count FROM photos')
+    const [[albumStats]] = await pool.query('SELECT SUM(COALESCE(views, 0)) as totalAlbumViews, SUM(COALESCE(likes, 0)) as totalAlbumLikes FROM albums')
+    const [[photoStats]] = await pool.query('SELECT SUM(COALESCE(likes, 0)) as totalPhotoLikes FROM photos')
 
     return {
       totalViews: totalViews?.count || 0,
@@ -35,6 +37,8 @@ export class Analytics {
       pendingBookings: pendingBookings?.count || 0,
       totalAlbums: totalAlbums?.count || 0,
       totalPhotos: totalPhotos?.count || 0,
+      totalAlbumViews: Number(albumStats?.totalAlbumViews) || 0,
+      totalAlbumLikes: (Number(albumStats?.totalAlbumLikes) || 0) + (Number(photoStats?.totalPhotoLikes) || 0),
     }
   }
 

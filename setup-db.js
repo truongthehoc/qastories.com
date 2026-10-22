@@ -73,6 +73,12 @@ async function setupDatabase() {
       if (!colNames.includes('sort_order')) {
         await connection.query(`ALTER TABLE albums ADD COLUMN sort_order INT DEFAULT 0 AFTER is_featured`)
       }
+      if (!colNames.includes('views')) {
+        await connection.query(`ALTER TABLE albums ADD COLUMN views INT DEFAULT 0 AFTER sort_order`)
+      }
+      if (!colNames.includes('likes')) {
+        await connection.query(`ALTER TABLE albums ADD COLUMN likes INT DEFAULT 0 AFTER views`)
+      }
       if (!colNames.includes('updated_at')) {
         await connection.query(`ALTER TABLE albums ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`)
       }
@@ -92,6 +98,9 @@ async function setupDatabase() {
       }
       if (!pColNames.includes('sort_order')) {
         await connection.query(`ALTER TABLE photos ADD COLUMN sort_order INT DEFAULT 0 AFTER description`)
+      }
+      if (!pColNames.includes('likes')) {
+        await connection.query(`ALTER TABLE photos ADD COLUMN likes INT DEFAULT 0 AFTER sort_order`)
       }
     } catch (e) {
       // Ignore

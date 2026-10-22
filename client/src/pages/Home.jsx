@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, CheckCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle, Heart, Eye, Flame } from 'lucide-react'
 import HeroSlider from '../components/ui/HeroSlider'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import { useSettings } from '../context/SettingsContext'
@@ -100,11 +100,60 @@ export default function Home() {
     return true
   })
 
+  const [likedAlbums, setLikedAlbums] = useState(() => {
+    try {
+      const raw = localStorage.getItem('qastories_liked_albums')
+      return raw ? JSON.parse(raw) : []
+    } catch {
+      return []
+    }
+  })
+
+  const handleToggleLike = async (e, albumId) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!albumId) return
+
+    const currentlyLiked = likedAlbums.includes(albumId)
+    const action = currentlyLiked ? 'unlike' : 'like'
+    const newLiked = currentlyLiked
+      ? likedAlbums.filter((id) => id !== albumId)
+      : [...likedAlbums, albumId]
+
+    setLikedAlbums(newLiked)
+    try {
+      localStorage.setItem('qastories_liked_albums', JSON.stringify(newLiked))
+    } catch {}
+
+    setAlbums((prev) =>
+      prev.map((a) => {
+        if (a.id === albumId) {
+          return {
+            ...a,
+            likes: Math.max(0, (Number(a.likes) || 0) + (currentlyLiked ? -1 : 1)),
+          }
+        }
+        return a
+      })
+    )
+
+    try {
+      const res = await api.post(`/albums/${albumId}/like`, { action })
+      if (res?.success && res?.data?.likes !== undefined) {
+        setAlbums((prev) =>
+          prev.map((a) => (a.id === albumId ? { ...a, likes: res.data.likes } : a))
+        )
+      }
+    } catch (err) {
+      console.warn('Lỗi thả tym album:', err)
+    }
+  }
+
   useEffect(() => {
     let isMounted = true
     const fetchAlbums = async () => {
       try {
-        const res = await api.get('/albums')
+        const res = await api.get('/albums?featured=true')
         if (isMounted && res.success && res.data && res.data.length > 0) {
           setAlbums(res.data)
           try {
@@ -127,17 +176,32 @@ export default function Home() {
     if (!albums || albums.length === 0) {
       return loadingAlbums ? [] : defaultFeaturedAlbums
     }
-    const featured = albums.filter((a) => a.is_featured)
-    const list = featured.length > 0 ? featured : albums
-    return list.map((a) => ({
-      id: a.id,
-      slug: a.slug || String(a.id),
-      title: a.title,
-      desc: a.description || a.story || 'Khoảnh khắc tuyệt vời được ghi lại trọn vẹn tại QA Stories Studio.',
-      image: a.cover_image || a.cover_url || 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85',
-      count: `${a.photo_count || 0} bức ảnh`,
-      tag: a.category_label || a.category || 'Nổi Bật',
-    }))
+    // Tự động đề xuất lên trang chủ: ưu tiên album nhiều tym / lượt xem kết hợp gắn sao nổi bật
+    const sorted = [...albums].sort((a, b) => {
+      const scoreA = (a.is_featured ? 50 : 0) + (Number(a.likes) || 0) * 10 + (Number(a.views) || 0)
+      const scoreB = (b.is_featured ? 50 : 0) + (Number(b.likes) || 0) * 10 + (Number(b.views) || 0)
+      if (scoreB !== scoreA) return scoreB - scoreA
+      return (a.sort_order || 0) - (b.sort_order || 0)
+    })
+
+    const list = sorted.slice(0, 6)
+    return list.map((a) => {
+      const likes = Number(a.likes) || 0
+      const views = Number(a.views) || 0
+      const isPopular = likes >= 5 || views >= 30 || (likes > 0 && views > 10)
+      return {
+        id: a.id,
+        slug: a.slug || String(a.id),
+        title: a.title,
+        desc: a.description || a.story || 'Khoảnh khắc tuyệt vời được ghi lại trọn vẹn tại QA Stories Studio.',
+        image: a.cover_image || a.cover_url || 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=85',
+        count: `${a.photo_count || 0} bức ảnh`,
+        tag: a.category_label || a.category || 'Nổi Bật',
+        likes,
+        views,
+        isPopular,
+      }
+    })
   }, [albums, loadingAlbums])
 
   // Track aspect ratio for each album cover (landscape vs portrait)
@@ -361,17 +425,59 @@ export default function Home() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
 
-                        {/* Tag top */}
-                        <div className="absolute top-4 left-4">
-                          <span className="bg-white/95 backdrop-blur-md text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
-                            {album.tag}
-                          </span>
+                        {/* Top badges: Left = category tag & trending badge, Right = views & likes */}
+                        <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10 pointer-events-auto">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-white/95 backdrop-blur-md text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
+                              {album.tag}
+                            </span>
+                            {album.isPopular && (
+                              <span className="bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+                                <Flame size={12} className="fill-white" /> Yêu Thích
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {/* Thống kê lượt xem album */}
+                            <span className="bg-black/45 backdrop-blur-md text-white text-xs font-medium px-2.5 py-1.5 rounded-full border border-white/20 flex items-center gap-1 shadow-sm">
+                              <Eye size={12} className="text-orange-300" />
+                              <span>{album.views || 0}</span>
+                            </span>
+
+                            {/* Thả tym album */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleLike(e, album.id)}
+                              className={`backdrop-blur-md text-xs font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1 transition-all duration-200 cursor-pointer shadow-sm ${
+                                likedAlbums.includes(album.id)
+                                  ? 'bg-rose-500 text-white shadow-rose-500/30 scale-105'
+                                  : 'bg-black/45 hover:bg-black/65 text-white border border-white/20 hover:scale-105'
+                              }`}
+                              title={likedAlbums.includes(album.id) ? 'Bỏ thích album' : 'Thả tim album này'}
+                            >
+                              <Heart
+                                size={12}
+                                className={`transition-transform duration-200 ${
+                                  likedAlbums.includes(album.id) ? 'fill-white text-white' : 'text-rose-400'
+                                }`}
+                              />
+                              <span>{album.likes || 0}</span>
+                            </button>
+                          </div>
                         </div>
 
                         {/* Bottom Info */}
                         <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 pointer-events-none">
-                          <div className="font-body text-primary-light text-xs font-semibold uppercase tracking-wider mb-1">
-                            {album.count}
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="font-body text-primary-light font-semibold uppercase tracking-wider">
+                              {album.count}
+                            </span>
+                            <span className="text-white/80 text-[11px] font-medium flex items-center gap-2">
+                              <span>{album.views || 0} lượt xem</span>
+                              <span>•</span>
+                              <span>{album.likes || 0} tym</span>
+                            </span>
                           </div>
                           <h3
                             className={`font-heading font-bold text-white ${

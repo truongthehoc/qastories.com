@@ -7,6 +7,10 @@ import {
   Search,
   X,
   FolderSearch,
+  Heart,
+  Eye,
+  Flame,
+  ArrowUpDown,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
@@ -27,6 +31,15 @@ export default function Album() {
   const { settings } = useSettings()
   const [activeTab, setActiveTab] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState('default') // 'default' | 'likes' | 'views'
+  const [likedAlbums, setLikedAlbums] = useState(() => {
+    try {
+      const raw = localStorage.getItem('qastories_liked_albums')
+      return raw ? JSON.parse(raw) : []
+    } catch {
+      return []
+    }
+  })
   const [albums, setAlbums] = useState(() => {
     try {
       const cached = localStorage.getItem('qastories_cached_albums_formatted')
@@ -48,6 +61,46 @@ export default function Album() {
     } catch {}
     return true
   })
+
+  const handleToggleLike = async (e, albumId) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!albumId) return
+
+    const currentlyLiked = likedAlbums.includes(albumId)
+    const action = currentlyLiked ? 'unlike' : 'like'
+    const newLiked = currentlyLiked
+      ? likedAlbums.filter((id) => id !== albumId)
+      : [...likedAlbums, albumId]
+
+    setLikedAlbums(newLiked)
+    try {
+      localStorage.setItem('qastories_liked_albums', JSON.stringify(newLiked))
+    } catch {}
+
+    setAlbums((prev) =>
+      prev.map((a) => {
+        if (a.id === albumId) {
+          return {
+            ...a,
+            likes: Math.max(0, (Number(a.likes) || 0) + (currentlyLiked ? -1 : 1)),
+          }
+        }
+        return a
+      })
+    )
+
+    try {
+      const res = await api.post(`/albums/${albumId}/like`, { action })
+      if (res?.success && res?.data?.likes !== undefined) {
+        setAlbums((prev) =>
+          prev.map((a) => (a.id === albumId ? { ...a, likes: res.data.likes } : a))
+        )
+      }
+    } catch (err) {
+      console.warn('Lỗi thả tym:', err)
+    }
+  }
 
   useEffect(() => {
     let isMounted = true
@@ -80,14 +133,18 @@ export default function Album() {
             date: item.date_shot || item.date || '',
             location: item.location || 'Bình Dương',
             packageName: item.package_name || item.packageName || 'Gói Chụp Nghệ Thuật',
+            views: Number(item.views) || 0,
+            likes: Number(item.likes) || 0,
             photoCount: item.photo_count !== undefined ? item.photo_count : (Array.isArray(item.photos) ? item.photos.length : 1),
             gallery: (Array.isArray(item.photos) && item.photos.length > 0)
               ? item.photos.map(p => ({
+                  id: p.id,
                   src: normalizeUrl(p.url || p.photo_url || p.src || p.photoUrl),
                   title: p.title || item.title,
-                  desc: p.description || item.desc || ''
+                  desc: p.description || item.desc || '',
+                  likes: Number(p.likes) || 0,
                 }))
-              : [{ src: normalizeUrl(item.cover_image || item.cover_url || item.cover), title: item.title, desc: item.description || item.desc || '' }]
+              : [{ id: 0, src: normalizeUrl(item.cover_image || item.cover_url || item.cover), title: item.title, desc: item.description || item.desc || '', likes: 0 }]
           }))
           setAlbums(formatted)
           try {
@@ -142,7 +199,7 @@ export default function Album() {
 
   const filteredAlbums = useMemo(() => {
     if (!Array.isArray(albums)) return []
-    return albums.filter((album) => {
+    const list = albums.filter((album) => {
       if (!album) return false
       const matchCategory =
         activeTab === 'all' ||
@@ -157,11 +214,20 @@ export default function Album() {
 
       return matchCategory && matchSearch
     })
-  }, [albums, activeTab, searchTerm])
+
+    if (sortBy === 'likes') {
+      return [...list].sort((a, b) => (Number(b.likes) || 0) - (Number(a.likes) || 0))
+    }
+    if (sortBy === 'views') {
+      return [...list].sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0))
+    }
+    return list
+  }, [albums, activeTab, searchTerm, sortBy])
 
   const handleClearFilter = () => {
     setActiveTab('all')
     setSearchTerm('')
+    setSortBy('default')
   }
 
   const isContactEnabled =
@@ -250,15 +316,54 @@ export default function Album() {
               })}
             </div>
 
-            {/* Result Counter & Reset */}
-            <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-gray-500 shrink-0 ml-auto">
+            {/* Result Counter & Sort & Reset */}
+            <div className="flex items-center gap-3 text-xs font-semibold text-gray-500 shrink-0 ml-auto flex-wrap">
+              {/* Sort selector */}
+              <div className="inline-flex items-center gap-1 bg-orange-50/90 rounded-full p-1 border border-orange-200/60">
+                <button
+                  type="button"
+                  onClick={() => setSortBy('default')}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    sortBy === 'default'
+                      ? 'bg-white text-primary shadow-xs font-bold'
+                      : 'text-gray-600 hover:text-primary'
+                  }`}
+                >
+                  Mới nhất
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('likes')}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                    sortBy === 'likes'
+                      ? 'bg-rose-500 text-white shadow-xs font-bold'
+                      : 'text-gray-600 hover:text-rose-600'
+                  }`}
+                >
+                  <Heart size={12} className={sortBy === 'likes' ? 'fill-white' : ''} />
+                  Nhiều tym
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('views')}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                    sortBy === 'views'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-gray-600 hover:text-primary'
+                  }`}
+                >
+                  <Eye size={12} />
+                  Xem nhiều
+                </button>
+              </div>
+
               <span>
-                Hiển thị <strong className="text-primary">{filteredAlbums.length}</strong> / {albums.length} album
+                Hiển thị <strong className="text-primary">{filteredAlbums.length}</strong> / {albums.length}
               </span>
-              {(searchTerm || activeTab !== 'all') && (
+              {(searchTerm || activeTab !== 'all' || sortBy !== 'default') && (
                 <button
                   onClick={handleClearFilter}
-                  className="text-primary hover:underline ml-2 cursor-pointer"
+                  className="text-primary hover:underline cursor-pointer"
                 >
                   Đặt lại
                 </button>
@@ -307,22 +412,63 @@ export default function Album() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
 
                         {/* Top Badges */}
-                        <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-                          <span className="bg-white/95 backdrop-blur-md text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
-                            {album.categoryLabel}
-                          </span>
+                        <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10 pointer-events-auto">
+                          <div className="flex items-center gap-1.5">
+                            <span className="bg-white/95 backdrop-blur-md text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
+                              {album.categoryLabel}
+                            </span>
+                            {((Number(album.likes) || 0) >= 5 || (Number(album.views) || 0) >= 30) && (
+                              <span className="bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm flex items-center gap-1">
+                                <Flame size={11} className="fill-white" /> Hot
+                              </span>
+                            )}
+                          </div>
 
-                          <span className="bg-black/40 backdrop-blur-md text-white text-xs font-medium px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-sm">
-                            <Camera size={13} className="text-primary-light" />
-                            {photoDisplayCount} ảnh
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {/* Số ảnh */}
+                            <span className="bg-black/40 backdrop-blur-md text-white text-xs font-medium px-2.5 py-1.5 rounded-full border border-white/20 flex items-center gap-1 shadow-sm">
+                              <Camera size={12} className="text-primary-light" />
+                              {photoDisplayCount}
+                            </span>
+
+                            {/* Lượt xem */}
+                            <span className="bg-black/40 backdrop-blur-md text-white text-xs font-medium px-2.5 py-1.5 rounded-full border border-white/20 flex items-center gap-1 shadow-sm">
+                              <Eye size={12} className="text-orange-300" />
+                              {album.views || 0}
+                            </span>
+
+                            {/* Nút thả tym */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleLike(e, album.id)}
+                              className={`backdrop-blur-md text-xs font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1 transition-all duration-200 cursor-pointer shadow-sm ${
+                                likedAlbums.includes(album.id)
+                                  ? 'bg-rose-500 text-white shadow-rose-500/30 scale-105'
+                                  : 'bg-black/40 hover:bg-black/60 text-white border border-white/20 hover:scale-105'
+                              }`}
+                              title={likedAlbums.includes(album.id) ? 'Bỏ thích album' : 'Thả tim album'}
+                            >
+                              <Heart
+                                size={12}
+                                className={`transition-transform duration-200 ${
+                                  likedAlbums.includes(album.id) ? 'fill-white text-white' : 'text-rose-400'
+                                }`}
+                              />
+                              <span>{album.likes || 0}</span>
+                            </button>
+                          </div>
                         </div>
 
                         {/* Bottom Info */}
-                        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                        <div className="absolute bottom-0 left-0 right-0 p-6 text-white pointer-events-none">
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="font-body text-primary-light text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                               Xem Chi Tiết Album <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                            </span>
+                            <span className="text-white/80 text-[11px] font-medium flex items-center gap-1.5">
+                              <span>{album.views || 0} xem</span>
+                              <span>•</span>
+                              <span>{album.likes || 0} tym</span>
                             </span>
                           </div>
                           <h3 className="font-heading font-bold text-2xl text-white group-hover:text-primary-light transition-colors leading-snug">

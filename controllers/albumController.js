@@ -3,8 +3,12 @@ import Photo from '../models/Photo.js'
 
 export const getPublicAlbums = async (req, res, next) => {
   try {
-    const { category } = req.query
-    const albums = await Album.getAll({ category })
+    const { category, featured, sort } = req.query
+    const albums = await Album.getAll({
+      category,
+      featured: featured === 'true' || featured === '1',
+      sortBy: sort,
+    })
     res.json({ success: true, data: albums })
   } catch (error) {
     next(error)
@@ -19,6 +23,47 @@ export const getPublicAlbumBySlug = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy album' })
     }
     res.json({ success: true, data: album })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const trackAlbumView = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const updated = await Album.incrementViews(id)
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy album' })
+    }
+    res.json({ success: true, data: updated })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const likeAlbum = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { action } = req.body // 'like' | 'unlike'
+    const updated = await Album.toggleLike(id, action)
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy album' })
+    }
+    res.json({ success: true, data: updated })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const likePhoto = async (req, res, next) => {
+  try {
+    const { photoId } = req.params
+    const { action } = req.body // 'like' | 'unlike'
+    const updated = await Photo.toggleLike(photoId, action)
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy ảnh' })
+    }
+    res.json({ success: true, data: updated })
   } catch (error) {
     next(error)
   }

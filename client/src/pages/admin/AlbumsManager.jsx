@@ -29,6 +29,8 @@ import {
   ChevronsRight,
   BookOpen,
   CheckCircle2,
+  Heart,
+  Flame,
 } from 'lucide-react'
 import api from '../../utils/api'
 import { useSettings } from '../../context/SettingsContext'
@@ -887,6 +889,7 @@ export default function AlbumsManager() {
                     <th className="py-3.5 px-4 min-w-[150px]">Danh Mục</th>
                     <th className="py-3.5 px-4 min-w-[150px]">Thời Gian & Địa Điểm</th>
                     <th className="py-3.5 px-4 text-center min-w-[110px]">Số Lượng Ảnh</th>
+                    <th className="py-3.5 px-4 text-center min-w-[120px]">Lượt Xem & Tym</th>
                     <th className="py-3.5 px-4 text-center min-w-[100px]">Nổi Bật</th>
                     <th className="py-3.5 px-4 text-right min-w-[170px]">Thao Tác</th>
                   </tr>
@@ -1002,6 +1005,21 @@ export default function AlbumsManager() {
                           </button>
                         </td>
 
+                        {/* 5.5. Views & Likes Count */}
+                        <td className="py-4 px-4 text-center">
+                          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/80">
+                            <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-700" title="Lượt xem">
+                              <Eye size={12} className="text-blue-500" />
+                              {a.views || 0}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="flex items-center gap-1 text-[11px] font-bold text-rose-600" title="Lượt tym">
+                              <Heart size={12} className="fill-rose-500 text-rose-500" />
+                              {a.likes || 0}
+                            </span>
+                          </div>
+                        </td>
+
                         {/* 6. Featured Toggle Button */}
                         <td className="py-4 px-4 text-center">
                           <button
@@ -1112,6 +1130,14 @@ export default function AlbumsManager() {
                       <span className="px-2 py-1 rounded-full text-[10px] font-mono bg-black/60 text-slate-200 backdrop-blur-md flex items-center gap-1">
                         <FileImage size={11} className="text-primary" />
                         {a.photo_count || 0} ảnh
+                      </span>
+                      <span className="px-2 py-1 rounded-full text-[10px] bg-black/60 text-slate-200 backdrop-blur-md flex items-center gap-1" title="Lượt xem">
+                        <Eye size={11} className="text-blue-400" />
+                        {a.views || 0}
+                      </span>
+                      <span className="px-2 py-1 rounded-full text-[10px] bg-black/60 text-rose-300 backdrop-blur-md flex items-center gap-1" title="Lượt tym">
+                        <Heart size={11} className="fill-rose-500 text-rose-500" />
+                        {a.likes || 0}
                       </span>
                     </div>
                   </div>
@@ -1738,6 +1764,14 @@ export default function AlbumsManager() {
                                 </div>
                               )}
 
+                              {/* Likes badge */}
+                              {Number(photo.likes) > 0 && (
+                                <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-semibold flex items-center gap-1 z-10 backdrop-blur-xs">
+                                  <Heart size={10} className="fill-rose-500 text-rose-500" />
+                                  <span>{photo.likes}</span>
+                                </div>
+                              )}
+
                               {/* Overlay action buttons */}
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-20">
                                 {!isCover && (
@@ -1928,6 +1962,17 @@ export default function AlbumsManager() {
                         <span className="absolute bottom-2 left-2 text-[10px] font-mono bg-black/60 px-1.5 py-0.5 rounded text-white backdrop-blur-sm">
                           #{idx + 1}
                         </span>
+                        {Number(p.likes) > 0 && (
+                          <span className="absolute bottom-2 right-2 text-[10px] font-semibold bg-rose-500/90 text-white px-1.5 py-0.5 rounded backdrop-blur-sm flex items-center gap-1 shadow-xs" title="Lượt tym">
+                            <Heart size={10} className="fill-white" />
+                            <span>{p.likes}</span>
+                          </span>
+                        )}
+                        {idx === 0 && Number(p.likes) > 0 && (
+                          <span className="absolute top-2 left-2 text-[9px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded shadow-sm">
+                            👑 Top 1
+                          </span>
+                        )}
                       </div>
                       <div className="p-2 text-[11px] bg-white truncate text-slate-700 border-t border-slate-200/60 font-medium">
                         {p.title || 'Ảnh không tên'}

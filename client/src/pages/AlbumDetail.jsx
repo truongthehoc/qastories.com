@@ -11,6 +11,9 @@ import {
   ZoomIn,
   ArrowRight,
   Share2,
+  Heart,
+  Eye,
+  Flame,
 } from 'lucide-react'
 import { albumsData as defaultAlbums } from '../data/albumsData'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
@@ -24,6 +27,24 @@ function normalizeUrl(url) {
     return url
   }
   return url.startsWith('/') ? url : `/${url}`
+}
+
+function getLikedAlbums() {
+  try {
+    const raw = localStorage.getItem('qastories_liked_albums')
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function getLikedPhotos() {
+  try {
+    const raw = localStorage.getItem('qastories_liked_photos')
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
 }
 
 function getInitialAlbum(id) {
@@ -50,6 +71,18 @@ function getInitialAlbum(id) {
       if (Array.isArray(list)) {
         const item = list.find((a) => a.id === numId || a.slug === id || String(a.id) === id)
         if (item) {
+          const gallery = (item.photos && item.photos.length > 0)
+            ? item.photos.map((p) => ({
+                id: p.id,
+                src: normalizeUrl(p.url || p.photo_url || p.src || p.photoUrl),
+                title: p.title || item.title,
+                desc: p.description || item.desc || '',
+                likes: Number(p.likes) || 0,
+              }))
+            : [{ id: 0, src: normalizeUrl(item.cover_image || item.cover_url || item.cover), title: item.title, desc: item.description || item.desc || '', likes: 0 }]
+
+          gallery.sort((a, b) => (Number(b.likes) || 0) - (Number(a.likes) || 0))
+
           return {
             id: item.id,
             slug: item.slug || `album-${item.id}`,
@@ -62,13 +95,9 @@ function getInitialAlbum(id) {
             date: item.date_shot || item.date || '',
             location: item.location || 'Bình Dương',
             packageName: item.package_name || item.packageName || 'Gói Chụp Nghệ Thuật',
-            gallery: (item.photos && item.photos.length > 0)
-              ? item.photos.map((p) => ({
-                  src: normalizeUrl(p.url || p.photo_url || p.src || p.photoUrl),
-                  title: p.title || item.title,
-                  desc: p.description || item.desc || '',
-                }))
-              : [{ src: normalizeUrl(item.cover_image || item.cover_url || item.cover), title: item.title, desc: item.description || item.desc || '' }],
+            views: Number(item.views) || 0,
+            likes: Number(item.likes) || 0,
+            gallery,
           }
         }
       }
@@ -94,6 +123,101 @@ export default function AlbumDetail() {
   // Khởi tạo ngay lập tức từ cache nếu có để tránh giật giao diện "Không tìm thấy"
   const [album, setAlbum] = useState(() => getInitialAlbum(id))
   const [loading, setLoading] = useState(() => !getInitialAlbum(id))
+  const [likedAlbums, setLikedAlbums] = useState(() => getLikedAlbums())
+  const [likedPhotos, setLikedPhotos] = useState(() => getLikedPhotos())
+
+  const isAlbumLiked = album ? (likedAlbums.includes(album.id) || likedAlbums.includes(album.slug)) : false
+  const isPhotoLiked = (photoId) => likedPhotos.includes(photoId)
+
+  // Track album view (lượt xem) once per session
+  useEffect(() => {
+    if (!album?.id) return
+    const sessionKey = `qastories_viewed_album_${album.id}`
+    if (!sessionStorage.getItem(sessionKey)) {
+      sessionStorage.setItem(sessionKey, '1')
+      api.post(`/albums/${album.id}/view`)
+        .then((res) => {
+          if (res?.success && res?.data?.views !== undefined) {
+            setAlbum((prev) => (prev ? { ...prev, views: res.data.views } : prev))
+          }
+        })
+        .catch(() => {})
+    }
+  }, [album?.id])
+
+  // Thả tym / Bỏ tym cho album
+  const handleLikeAlbum = async () => {
+    if (!album?.id) return
+    const currentlyLiked = isAlbumLiked
+    const action = currentlyLiked ? 'unlike' : 'like'
+    const newLiked = currentlyLiked
+      ? likedAlbums.filter((aId) => aId !== album.id && aId !== album.slug)
+      : [...likedAlbums, album.id]
+
+    setLikedAlbums(newLiked)
+    try {
+      localStorage.setItem('qastories_liked_albums', JSON.stringify(newLiked))
+    } catch {}
+
+    // Cập nhật giao diện tức thì
+    setAlbum((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        likes: Math.max(0, (Number(prev.likes) || 0) + (currentlyLiked ? -1 : 1)),
+      }
+    })
+
+    try {
+      const res = await api.post(`/albums/${album.id}/like`, { action })
+      if (res?.success && res?.data?.likes !== undefined) {
+        setAlbum((prev) => (prev ? { ...prev, likes: res.data.likes } : prev))
+      }
+    } catch (err) {
+      console.warn('Lỗi thả tym album:', err)
+    }
+  }
+
+  // Thả tym / Bỏ tym cho bức ảnh bất kỳ trong album
+  const handleLikePhoto = async (e, photoId) => {
+    e.stopPropagation()
+    if (!photoId) return
+
+    const currentlyLiked = isPhotoLiked(photoId)
+    const action = currentlyLiked ? 'unlike' : 'like'
+    const newLiked = currentlyLiked
+      ? likedPhotos.filter((pId) => pId !== photoId)
+      : [...likedPhotos, photoId]
+
+    setLikedPhotos(newLiked)
+    try {
+      localStorage.setItem('qastories_liked_photos', JSON.stringify(newLiked))
+    } catch {}
+
+    // Cập nhật lượt tym của ảnh và tự động xếp thứ tự lại:
+    // Tấm hình thuộc album được nhiều tym sẽ được xếp thứ tự tự động lên đầu album
+    setAlbum((prev) => {
+      if (!prev || !prev.gallery) return prev
+      const newGallery = prev.gallery.map((p) => {
+        if (p.id === photoId) {
+          return {
+            ...p,
+            likes: Math.max(0, (Number(p.likes) || 0) + (currentlyLiked ? -1 : 1)),
+          }
+        }
+        return p
+      })
+      // Tự động sắp xếp ảnh nhiều tym lên trước
+      newGallery.sort((a, b) => (Number(b.likes) || 0) - (Number(a.likes) || 0))
+      return { ...prev, gallery: newGallery }
+    })
+
+    try {
+      await api.post(`/albums/photos/${photoId}/like`, { action })
+    } catch (err) {
+      console.warn('Lỗi thả tym ảnh:', err)
+    }
+  }
 
   const [allAlbums, setAllAlbums] = useState(() => {
     try {
@@ -168,6 +292,19 @@ export default function AlbumDetail() {
 
         if (detailRes.success && detailRes.data) {
           const item = detailRes.data
+          const gallery = (item.photos && item.photos.length > 0)
+            ? item.photos.map((p) => ({
+                id: p.id,
+                src: normalizeUrl(p.url || p.photo_url || p.src || p.photoUrl),
+                title: p.title || item.title,
+                desc: p.description || item.desc || '',
+                likes: Number(p.likes) || 0,
+              }))
+            : [{ id: 0, src: normalizeUrl(item.cover_image || item.cover_url || item.cover), title: item.title, desc: item.description || item.desc || '', likes: 0 }]
+
+          // Tấm hình thuộc album được nhiều tym sẽ được xếp thứ tự tự động lên đầu album
+          gallery.sort((a, b) => (Number(b.likes) || 0) - (Number(a.likes) || 0))
+
           const formatted = {
             id: item.id,
             slug: item.slug || `album-${item.id}`,
@@ -180,13 +317,9 @@ export default function AlbumDetail() {
             date: formatDateDisplay(item.date_shot) || item.date || '',
             location: item.location || 'Bình Dương',
             packageName: item.package_name || item.packageName || 'Gói Chụp Nghệ Thuật',
-            gallery: (item.photos && item.photos.length > 0)
-              ? item.photos.map(p => ({
-                  src: normalizeUrl(p.url || p.photo_url || p.src || p.photoUrl),
-                  title: p.title || item.title,
-                  desc: p.description || item.desc || ''
-                }))
-              : [{ src: normalizeUrl(item.cover_image || item.cover_url || item.cover), title: item.title, desc: item.description || item.desc || '' }]
+            views: Number(item.views) || 0,
+            likes: Number(item.likes) || 0,
+            gallery,
           }
           setAlbum(formatted)
         }
@@ -300,6 +433,12 @@ export default function AlbumDetail() {
                 <span className="inline-flex items-center gap-1 text-xs text-gray-500 font-medium">
                   <Camera size={13} className="text-primary" /> {album.gallery.length} ảnh
                 </span>
+                <span className="inline-flex items-center gap-1 text-xs text-gray-500 font-medium">
+                  <Eye size={13} className="text-primary" /> {album.views || 0} lượt xem
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs text-gray-500 font-medium">
+                  <Heart size={13} className="text-rose-500 fill-rose-500" /> {album.likes || 0} lượt thích
+                </span>
               </div>
 
               <h1 className="font-heading text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight leading-tight">
@@ -315,6 +454,29 @@ export default function AlbumDetail() {
 
             {/* Action CTAs */}
             <div className="flex items-center gap-2.5 shrink-0 self-start md:self-center">
+              {/* Thả tym Album */}
+              <button
+                type="button"
+                onClick={handleLikeAlbum}
+                className={`btn-outline py-2 px-3 sm:px-4 text-xs sm:text-sm inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-all duration-200 ${
+                  isAlbumLiked
+                    ? 'bg-rose-50 text-rose-600 border-rose-300 font-bold hover:bg-rose-100 shadow-xs'
+                    : 'bg-white text-gray-700 hover:text-rose-600 hover:border-rose-300'
+                }`}
+                title={isAlbumLiked ? 'Bỏ thích album' : 'Thả tim album này'}
+              >
+                <Heart
+                  size={15}
+                  className={`transition-transform duration-200 ${
+                    isAlbumLiked ? 'fill-rose-500 text-rose-500 scale-110' : 'text-rose-500'
+                  }`}
+                />
+                <span>{isAlbumLiked ? 'Đã Thích' : 'Thả Tim'}</span>
+                <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-700 text-[11px] font-bold">
+                  {album.likes || 0}
+                </span>
+              </button>
+
               {settings?.page_contact_enabled !== '0' &&
                 settings?.page_contact_enabled !== false &&
                 settings?.page_contact_enabled !== 0 && (
@@ -383,6 +545,37 @@ export default function AlbumDetail() {
                       decoding="async"
                     />
                   </div>
+
+                  {/* Top 1 Most Liked Badge */}
+                  {index === 0 && (Number(photo.likes) || 0) > 0 && (
+                    <div className="absolute top-3 left-3 z-20 pointer-events-none">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/95 text-white backdrop-blur-md shadow-md border border-amber-300/40">
+                        👑 Top 1 Tym
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Thả tym cho bức ảnh bất kỳ trong album */}
+                  {photo.id ? (
+                    <button
+                      type="button"
+                      onClick={(e) => handleLikePhoto(e, photo.id)}
+                      className={`absolute top-3 right-3 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md ${
+                        isPhotoLiked(photo.id)
+                          ? 'bg-rose-500 text-white shadow-rose-500/30 scale-105'
+                          : 'bg-black/45 hover:bg-black/65 text-white border border-white/25 hover:scale-105'
+                      }`}
+                      title={isPhotoLiked(photo.id) ? 'Bỏ tym bức ảnh này' : 'Thả tym cho bức ảnh này'}
+                    >
+                      <Heart
+                        size={13}
+                        className={`transition-transform duration-200 ${
+                          isPhotoLiked(photo.id) ? 'fill-white text-white scale-110' : 'text-rose-400'
+                        }`}
+                      />
+                      <span>{photo.likes || 0}</span>
+                    </button>
+                  ) : null}
 
                   {/* Hover overlay with zoom icon */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-5 sm:p-6 pointer-events-none">

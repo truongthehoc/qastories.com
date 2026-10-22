@@ -9,6 +9,9 @@ import {
   addPhotoToAlbum,
   addPhotosBatchToAlbum,
   deletePhoto,
+  trackAlbumView,
+  likeAlbum,
+  likePhoto,
 } from '../controllers/albumController.js'
 import { requireAdmin } from '../middlewares/auth.js'
 
@@ -17,6 +20,11 @@ const router = express.Router()
 // Public routes
 router.get('/', getPublicAlbums)
 router.get('/detail/:slug', getPublicAlbumBySlug)
+
+// Likes & Views (Public)
+router.post('/photos/:photoId/like', likePhoto)
+router.post('/:id/view', trackAlbumView)
+router.post('/:id/like', likeAlbum)
 
 // Admin routes
 router.get('/admin/:id', requireAdmin, getAlbumByIdAdmin)

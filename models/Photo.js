@@ -2,28 +2,44 @@ import pool from '../config/db.js'
 
 export class Photo {
   static async getByAlbumId(albumId) {
-    const [rows] = await pool.execute('SELECT * FROM photos WHERE album_id = ? ORDER BY sort_order ASC, id ASC', [albumId])
+    // Tấm hình thuộc album được nhiều tym sẽ được xếp thứ tự tự động lên đầu album
+    const [rows] = await pool.execute('SELECT * FROM photos WHERE album_id = ? ORDER BY likes DESC, sort_order ASC, id ASC', [albumId])
     return rows
   }
 
-  static async create({ album_id, filename, original_name, size, url, title, description, sort_order = 0 }) {
+  static async getById(id) {
+    const [rows] = await pool.execute('SELECT * FROM photos WHERE id = ?', [id])
+    return rows[0] || null
+  }
+
+  static async toggleLike(id, action = 'like') {
+    if (action === 'unlike') {
+      await pool.execute('UPDATE photos SET likes = GREATEST(0, COALESCE(likes, 0) - 1) WHERE id = ?', [id])
+    } else {
+      await pool.execute('UPDATE photos SET likes = COALESCE(likes, 0) + 1 WHERE id = ?', [id])
+    }
+    const [rows] = await pool.execute('SELECT id, album_id, likes FROM photos WHERE id = ?', [id])
+    return rows[0] || null
+  }
+
+  static async create({ album_id, filename, original_name, size, url, title, description, sort_order = 0, likes = 0 }) {
     const [result] = await pool.execute(
-      'INSERT INTO photos (album_id, filename, original_name, size, url, title, description, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [album_id, filename, original_name || '', size || 0, url, title || null, description || null, sort_order]
+      'INSERT INTO photos (album_id, filename, original_name, size, url, title, description, sort_order, likes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [album_id, filename, original_name || '', size || 0, url, title || null, description || null, sort_order, likes || 0]
     )
-    return { id: result.insertId, album_id, filename, original_name, size, url, title, description, sort_order }
+    return { id: result.insertId, album_id, filename, original_name, size, url, title, description, sort_order, likes: likes || 0 }
   }
 
   static async createMany(photos = []) {
     if (!photos || photos.length === 0) return []
     const values = []
     const placeholders = photos.map(p => {
-      values.push(p.album_id, p.filename || 'photo.webp', p.original_name || '', p.size || 0, p.url, p.title || null, p.description || null, p.sort_order || 0)
-      return '(?, ?, ?, ?, ?, ?, ?, ?)'
+      values.push(p.album_id, p.filename || 'photo.webp', p.original_name || '', p.size || 0, p.url, p.title || null, p.description || null, p.sort_order || 0, p.likes || 0)
+      return '(?, ?, ?, ?, ?, ?, ?, ?, ?)'
     }).join(', ')
 
     await pool.query(
-      `INSERT INTO photos (album_id, filename, original_name, size, url, title, description, sort_order) VALUES ${placeholders}`,
+      `INSERT INTO photos (album_id, filename, original_name, size, url, title, description, sort_order, likes) VALUES ${placeholders}`,
       values
     )
     return true
