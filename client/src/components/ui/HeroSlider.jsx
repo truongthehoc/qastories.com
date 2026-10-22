@@ -18,20 +18,7 @@ function getBannerSrc(url, isMobile = false) {
   return url
 }
 
-const defaultSlides = [
-  {
-    id: 1,
-    image_url: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1080&q=75&auto=format',
-    title: 'QA Stories Newborn Photography',
-    device_type: 'all',
-  },
-  {
-    id: 2,
-    image_url: 'https://images.unsplash.com/photo-1544126592-807ade215a0b?w=1080&q=75&auto=format',
-    title: 'QA Stories Baby Photography',
-    device_type: 'all',
-  },
-]
+const defaultSlides = []
 
 export default function HeroSlider() {
   const [slides, setSlides] = useState(() => {
@@ -47,9 +34,21 @@ export default function HeroSlider() {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed
       }
     } catch {}
-    return defaultSlides
+    return []
   })
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined' && Array.isArray(window.__INITIAL_DATA__?.banners) && window.__INITIAL_DATA__.banners.length > 0) {
+      return false
+    }
+    try {
+      const cached = localStorage.getItem('qastories_cached_banners')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return false
+      }
+    } catch {}
+    return true
+  })
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth < 768
@@ -93,24 +92,26 @@ export default function HeroSlider() {
   // - Khi truy cập bằng Mobile: Lấy riêng danh sách banner Mobile (device_type === 'mobile')
   // - Khi truy cập bằng PC: Lấy riêng danh sách banner PC (device_type === 'pc')
   const displayedSlides = useMemo(() => {
-    const activeList = slides && slides.length > 0 ? slides : defaultSlides
+    if (!slides || slides.length === 0) {
+      return []
+    }
 
     if (isMobile) {
       // 1. Ưu tiên tuyệt đối danh sách Banner được tạo riêng cho Mobile
-      const mobileOnly = activeList.filter((s) => s.device_type === 'mobile')
+      const mobileOnly = slides.filter((s) => s.device_type === 'mobile')
       if (mobileOnly.length > 0) return mobileOnly
 
       // Fallback nếu chưa có banner mobile nào
-      const fallback = activeList.filter((s) => s.device_type !== 'mobile')
-      return fallback.length > 0 ? fallback : activeList
+      const fallback = slides.filter((s) => s.device_type !== 'mobile')
+      return fallback.length > 0 ? fallback : slides
     } else {
       // 1. Ưu tiên danh sách Banner được tạo riêng cho PC
-      const pcOnly = activeList.filter(
+      const pcOnly = slides.filter(
         (s) => s.device_type === 'pc' || s.device_type === 'all' || !s.device_type
       )
       if (pcOnly.length > 0) return pcOnly
 
-      return activeList
+      return slides
     }
   }, [slides, isMobile])
 
@@ -152,10 +153,7 @@ export default function HeroSlider() {
                   width={isMobile ? '800' : '1920'}
                   height={isMobile ? '1200' : '1080'}
                   onError={(e) => {
-                    const fallback = 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=75&auto=format'
-                    if (e.target.src !== fallback) {
-                      e.target.src = fallback
-                    }
+                    e.target.style.opacity = '0'
                   }}
                 />
                 {/* Top gradient for Navbar visibility */}

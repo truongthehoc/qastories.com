@@ -290,26 +290,32 @@ app.get('*', async (req, res) => {
 
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
 
-  // Tối ưu tải trang chủ di động: FCP & LCP siêu tốc < 1.0s
+  // Tối ưu tải trang chủ: FCP & LCP siêu tốc cho cả Mobile và PC
   if (req.path === '/' || req.path === '/index.html') {
     try {
       const banners = await getCachedBanners()
-      const mobileBanner = banners.find((b) => b.device_type === 'mobile') || banners[0]
-      let rawHeroUrl =
-        mobileBanner?.image_mobile ||
-        mobileBanner?.image_url ||
-        'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=75&auto=format'
-      const optimizedHeroUrl = rawHeroUrl
+      const ua = req.headers['user-agent'] || ''
+      const isMobileReq = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
+
+      const targetBanner = isMobileReq
+        ? (banners.find((b) => b.device_type === 'mobile') || banners.find((b) => b.device_type === 'all') || banners[0])
+        : (banners.find((b) => b.device_type === 'pc' || b.device_type === 'all' || !b.device_type) || banners[0])
+
+      const rawHeroUrl = targetBanner
+        ? ((isMobileReq && targetBanner.image_mobile) ? targetBanner.image_mobile : (targetBanner.image_url || targetBanner.image))
+        : null
 
       let html = rawHtml
 
       // 1. Cập nhật preload link cho ảnh Hero LCP
-      const preloadTag = `<link rel="preload" as="image" href="${optimizedHeroUrl}" fetchpriority="high" />`
-      if (html.includes('<!-- __HERO_LCP_PRELOAD__ -->')) {
-        html = html.replace(
-          /<!-- __HERO_LCP_PRELOAD__ -->[\s\S]*?(?=<link rel="stylesheet"|<link rel="preload" as="style"|<script|<\/head>)/i,
-          `<!-- __HERO_LCP_PRELOAD__ -->\n    ${preloadTag}\n    `
-        )
+      if (rawHeroUrl) {
+        const preloadTag = `<link rel="preload" as="image" href="${rawHeroUrl}" fetchpriority="high" />`
+        if (html.includes('<!-- __HERO_LCP_PRELOAD__ -->')) {
+          html = html.replace(
+            /<!-- __HERO_LCP_PRELOAD__ -->[\s\S]*?(?=<link rel="stylesheet"|<link rel="preload" as="style"|<script|<\/head>)/i,
+            `<!-- __HERO_LCP_PRELOAD__ -->\n    ${preloadTag}\n    `
+          )
+        }
       }
 
       // 2. Tiêm dữ liệu banner ban đầu loại bỏ waterfall request
@@ -317,10 +323,10 @@ app.get('*', async (req, res) => {
       html = html.replace('</head>', `  ${initialDataScript}\n</head>`)
 
       // 3. Tiêm ảnh Hero vào shell HTML để hiển thị tức thì khi nhận byte đầu tiên
-      if (html.includes('<!-- __HERO_SHELL_IMAGE__ -->')) {
-        const shellImageTag = `<!-- __HERO_SHELL_IMAGE__ -->\n        <img src="${optimizedHeroUrl}" alt="QA Stories Studio" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" fetchpriority="high" decoding="async" />`
+      if (rawHeroUrl && html.includes('<!-- __HERO_SHELL_IMAGE__ -->')) {
+        const shellImageTag = `<!-- __HERO_SHELL_IMAGE__ -->\n        <img src="${rawHeroUrl}" alt="${targetBanner.title || 'QA Stories Studio'}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" fetchpriority="high" decoding="async" />`
         html = html.replace(
-          /<!-- __HERO_SHELL_IMAGE__ -->[\s\S]*?(?=<div style="position:absolute;bottom:0)/i,
+          /<!-- __HERO_SHELL_IMAGE__ -->[\s\S]*?(?=<div style="position:absolute;bottom:0|<script)/i,
           shellImageTag + '\n        '
         )
       }

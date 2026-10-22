@@ -35,14 +35,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Hero LCP Preload (Dynamically updated by server.js or default fallback) -->
+    <!-- Hero LCP Preload (Dynamically updated by server.js) -->
     <!-- __HERO_LCP_PRELOAD__ -->
-    <link
-      rel="preload"
-      as="image"
-      href="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=75&auto=format"
-      fetchpriority="high"
-    />
 
     <!-- Non-blocking Google Fonts with display=swap (Mulish removed from public site) -->
     <link
@@ -102,13 +96,35 @@
           <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.1);"></div>
         </div>
         <!-- __HERO_SHELL_IMAGE__ -->
-        <img
-          src="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=75&auto=format"
-          alt="QA Stories Studio"
-          style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;"
-          fetchpriority="high"
-          decoding="async"
-        />
+        <script>
+          (function() {
+            try {
+              var isMob = window.innerWidth < 768;
+              var cached = localStorage.getItem('qastories_cached_banners');
+              if (cached) {
+                var list = JSON.parse(cached);
+                if (Array.isArray(list) && list.length > 0) {
+                  var banner = null;
+                  if (isMob) {
+                    banner = list.find(function(b) { return b.device_type === 'mobile'; }) || list[0];
+                  } else {
+                    banner = list.find(function(b) { return b.device_type === 'pc' || b.device_type === 'all' || !b.device_type; }) || list[0];
+                  }
+                  var url = isMob && banner.image_mobile ? banner.image_mobile : (banner.image_url || banner.image);
+                  if (url) {
+                    var img = document.createElement('img');
+                    img.src = url;
+                    img.alt = banner.title || 'QA Stories';
+                    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;';
+                    img.setAttribute('fetchpriority', 'high');
+                    var container = document.getElementById('hero-shell');
+                    if (container) container.insertBefore(img, container.firstChild);
+                  }
+                }
+              }
+            } catch(e) {}
+          })();
+        </script>
         <!-- Bottom overlay -->
         <div style="position:absolute;bottom:0;left:0;right:0;height:140px;background:linear-gradient(to top,rgba(0,0,0,0.4),transparent);pointer-events:none;"></div>
       </div>
