@@ -24,6 +24,8 @@ import {
   X,
   ShieldAlert,
   Layers,
+  ExternalLink,
+  ImageIcon,
 } from 'lucide-react'
 import api from '../../utils/api'
 import { useSettings } from '../../context/SettingsContext'
@@ -34,9 +36,11 @@ export default function SettingsManager() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [uploadingSeoImage, setUploadingSeoImage] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
 
   const [form, setForm] = useState({
+    site_url: 'https://qastories.com',
     brand_name: 'QA Stories',
     brand_slogan: 'Studio Lưu Giữ Khoảnh Khắc Thiên Thần Của Bé',
     brand_logo: '',
@@ -52,6 +56,7 @@ export default function SettingsManager() {
     seo_title: 'QA Stories - Studio Chụp Ảnh Bé & Gia Đình Chuyên Nghiệp',
     seo_description: 'Studio chụp ảnh sơ sinh newborn, thôi nôi, 100 ngày tuổi và gia đình uy tín với phong cách nghệ thuật, ánh sáng tự nhiên.',
     seo_keywords: 'chụp ảnh em bé, chụp ảnh newborn, chụp thôi nôi, studio bé, QA stories',
+    seo_image: '',
     album_header_label: 'Bộ Sưu Tập Nghệ Thuật',
     album_header_title: 'Khoảnh Khắc Của Bé',
     album_header_title_highlight: 'Kể Bằng Hình Ảnh',
@@ -97,6 +102,23 @@ export default function SettingsManager() {
       alert('Tải logo thất bại: ' + error.message)
     } finally {
       setUploadingLogo(false)
+    }
+  }
+
+  const handleSeoImageUpload = async (e) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    try {
+      setUploadingSeoImage(true)
+      const res = await api.uploadPhotos(files, 'seo')
+      if (res.success && res.files && res.files[0]) {
+        setForm((prev) => ({ ...prev, seo_image: res.files[0].url }))
+      }
+    } catch (error) {
+      alert('Tải ảnh đại diện SEO thất bại: ' + error.message)
+    } finally {
+      setUploadingSeoImage(false)
     }
   }
 
@@ -636,46 +658,214 @@ export default function SettingsManager() {
           </div>
         )}
 
-        {/* Tab 4: SEO Metadata */}
+        {/* Tab 4: SEO Metadata & Social Share Cards */}
         {activeTab === 'seo' && (
-          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
-            <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-              <Search className="text-primary" size={18} />
-              <h2 className="font-heading font-bold text-base text-slate-900">Tối Ưu Hóa Công Cụ Tìm Kiếm (SEO)</h2>
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 space-y-8 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+              <div className="flex items-center gap-2.5">
+                <Search className="text-primary" size={20} />
+                <div>
+                  <h2 className="font-heading font-bold text-base text-slate-900">
+                    Cấu Hình SEO & Hiển Thị Khi Chia Sẻ Link (Zalo, Facebook, Tin Nhắn...)
+                  </h2>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Khi copy link <span className="font-semibold text-primary">qastories.com</span> gửi đi, hệ thống sẽ tự động hiển thị thẻ xem trước (Rich Preview) với thông tin dưới đây.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">Thẻ Tiêu Đề Mặc Định (Meta Title)</label>
-                <input
-                  type="text"
-                  value={form.seo_title || ''}
-                  onChange={(e) => setForm({ ...form, seo_title: e.target.value })}
-                  placeholder="Nhập tiêu đề SEO mặc định..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary"
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Cột trái: Form cấu hình */}
+              <div className="lg:col-span-7 space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1.5 flex items-center justify-between">
+                    <span>Tên Miền Website Chính Thức (Domain / Canonical URL)</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Bắt buộc để Zalo/Facebook nhận diện đúng</span>
+                  </label>
+                  <div className="relative">
+                    <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                    <input
+                      type="url"
+                      value={form.site_url || ''}
+                      onChange={(e) => setForm({ ...form, site_url: e.target.value })}
+                      placeholder="https://qastories.com"
+                      className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary font-medium"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Ví dụ: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600">https://qastories.com</code> (Không để dấu / ở cuối)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1.5">
+                    Thẻ Tiêu Đề Mặc Định (Meta Title)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.seo_title || ''}
+                    onChange={(e) => setForm({ ...form, seo_title: e.target.value })}
+                    placeholder="QA Stories - Studio Chụp Ảnh Bé & Gia Đình Chuyên Nghiệp"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary font-semibold"
+                  />
+                  <div className="flex justify-between items-center text-[10px] text-slate-400 mt-1">
+                    <span>Tiêu đề lớn in đậm trên thanh trình duyệt & thẻ chia sẻ mạng xã hội</span>
+                    <span>{(form.seo_title || '').length}/65 ký tự khuyến nghị</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1.5">
+                    Thẻ Mô Tả Tìm Kiếm & Chia Sẻ (Meta Description)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={form.seo_description || ''}
+                    onChange={(e) => setForm({ ...form, seo_description: e.target.value })}
+                    placeholder="Nhập đoạn mô tả ngắn gọn, hấp dẫn về studio..."
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary leading-relaxed"
+                  />
+                  <div className="flex justify-between items-center text-[10px] text-slate-400 mt-1">
+                    <span>Đoạn mô tả ngắn hiển thị bên dưới tiêu đề khi chia sẻ link</span>
+                    <span>{(form.seo_description || '').length}/160 ký tự khuyến nghị</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1.5">
+                    Từ Khóa SEO (Keywords, cách nhau bằng dấu phẩy)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.seo_keywords || ''}
+                    onChange={(e) => setForm({ ...form, seo_keywords: e.target.value })}
+                    placeholder="chụp ảnh em bé, chụp ảnh newborn, chụp thôi nôi, studio bé, QA stories"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                {/* Ảnh đại diện chia sẻ (OG Image) */}
+                <div className="pt-2">
+                  <label className="block text-slate-700 font-semibold mb-1.5 flex items-center justify-between">
+                    <span>Ảnh Đại Diện Khi Chia Sẻ Link (Social Share / Open Graph Image)</span>
+                    <span className="text-[10px] text-amber-600 font-medium">Khuyến nghị: 1200 x 630 px</span>
+                  </label>
+
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={form.seo_image || ''}
+                        onChange={(e) => setForm({ ...form, seo_image: e.target.value })}
+                        placeholder="Đường dẫn ảnh đại diện hoặc tải file bên dưới..."
+                        className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-[11px] text-slate-900 focus:outline-none focus:border-primary"
+                      />
+                      <label className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl cursor-pointer text-xs font-semibold shadow-xs transition-colors shrink-0">
+                        <Upload size={13} />
+                        <span>{uploadingSeoImage ? 'Đang tải...' : 'Tải Ảnh Mới'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleSeoImageUpload}
+                          disabled={uploadingSeoImage}
+                          className="hidden"
+                        />
+                      </label>
+                      {form.seo_image && (
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, seo_image: '' })}
+                          className="p-2 text-slate-400 hover:text-red-500 rounded-xl border border-slate-200 hover:bg-white transition-colors"
+                          title="Xóa để dùng banner mặc định"
+                        >
+                          <X size={15} />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">
+                      💡 Nếu để trống, hệ thống sẽ tự động dùng <strong>Banner trang chủ đầu tiên</strong> và tự động chuẩn hóa sang định dạng ảnh 1200x630 chất lượng cao để hiển thị đẹp mắt trên mọi thiết bị.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">Thẻ Mô Tả Tìm Kiếm (Meta Description)</label>
-                <textarea
-                  rows={3}
-                  value={form.seo_description || ''}
-                  onChange={(e) => setForm({ ...form, seo_description: e.target.value })}
-                  placeholder="Nhập mô tả SEO hiển thị trên công cụ tìm kiếm..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary leading-relaxed"
-                />
-              </div>
+              {/* Cột phải: Khung xem trước trực quan (Live Social Share Card Preview) */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Sparkles size={14} className="text-primary" />
+                    Mô Phỏng Hiển Thị Trên Zalo & Facebook
+                  </span>
+                  <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold border border-emerald-200">
+                    Xem trước trực quan
+                  </span>
+                </div>
 
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">Từ Khóa (Keywords, cách nhau bằng dấu phẩy)</label>
-                <input
-                  type="text"
-                  value={form.seo_keywords || ''}
-                  onChange={(e) => setForm({ ...form, seo_keywords: e.target.value })}
-                  placeholder="Nhập danh sách từ khóa SEO..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:border-primary"
-                />
+                {/* Social Card Mockup */}
+                <div className="bg-slate-50 p-3 sm:p-4 rounded-2xl border border-slate-200 space-y-3">
+                  <div className="bg-white rounded-xl overflow-hidden border border-slate-200/90 shadow-sm transition-all hover:shadow-md">
+                    {/* Hình ảnh Card */}
+                    <div className="relative aspect-[1.91/1] w-full bg-slate-900 overflow-hidden flex items-center justify-center">
+                      {form.seo_image ? (
+                        <img
+                          src={form.seo_image}
+                          alt="SEO Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src="/og-image.jpg"
+                          alt="SEO Preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                          }}
+                        />
+                      )}
+                      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-xs text-white text-[9px] px-2 py-0.5 rounded font-mono font-medium">
+                        1200 x 630
+                      </div>
+                    </div>
+
+                    {/* Nội dung Card */}
+                    <div className="p-3.5 space-y-1 bg-white">
+                      <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 truncate">
+                        {(form.site_url || 'qastories.com').replace(/^https?:\/\//, '').replace(/\/.*$/, '')}
+                      </div>
+                      <div className="font-bold text-slate-900 text-xs line-clamp-1 leading-snug">
+                        {form.seo_title || 'QA Stories - Studio Chụp Ảnh Bé & Gia Đình'}
+                      </div>
+                      <div className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                        {form.seo_description || 'Studio chụp ảnh sơ sinh newborn, thôi nôi, 100 ngày tuổi và gia đình uy tín với phong cách nghệ thuật, ánh sáng tự nhiên.'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Hướng dẫn xóa cache */}
+                  <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-[11px] text-amber-900 space-y-1.5 leading-relaxed">
+                    <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                      <span>⚠️ Lưu ý về bộ nhớ đệm (Cache) của Zalo / Facebook:</span>
+                    </div>
+                    <p className="text-[10.5px]">
+                      Khi bạn đã gửi link một lần trước đó, Zalo và Facebook sẽ lưu lại kết quả cũ trong vài ngày.
+                    </p>
+                    <div className="pt-1 flex flex-wrap items-center gap-2">
+                      <a
+                        href={`https://developers.facebook.com/tools/debug/?q=${encodeURIComponent(form.site_url || 'https://qastories.com')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-100 border border-amber-300 rounded-lg text-[10px] font-semibold text-slate-800 transition-colors shadow-2xs"
+                      >
+                        <ExternalLink size={11} />
+                        <span>Xóa Cache Facebook (Debug Tool)</span>
+                      </a>
+                    </div>
+                    <p className="text-[10px] text-slate-500 pt-0.5">
+                      💬 <strong>Mẹo kiểm tra nhanh trên Zalo:</strong> Sau khi lưu, hãy thử gửi kèm tham số mới như: <code className="bg-amber-100/70 px-1 py-0.5 rounded text-amber-950 font-mono">{(form.site_url || 'https://qastories.com').replace(/\/$/, '')}/?v=1</code> để Zalo lập tức tải card mới!
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

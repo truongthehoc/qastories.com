@@ -11,6 +11,7 @@ import logger from './utils/logger.js'
 import { testConnection } from './config/db.js'
 import sharp from 'sharp'
 import { getCachedBanners } from './utils/bannersCache.js'
+import { getSeoForRequest, injectSeoToHtml, serveOgImage } from './utils/seoHelper.js'
 
 dotenv.config()
 
@@ -254,6 +255,9 @@ app.use(
   })
 )
 
+// Endpoint phục vụ ảnh Open Graph JPEG chuẩn 1200x630 cho Zalo, Facebook, Telegram
+app.get('/og-image.jpg', serveOgImage)
+
 // 4. API Routes
 app.use('/api', apiRoutes)
 
@@ -280,7 +284,7 @@ app.use((req, res, next) => {
   next()
 })
 
-// 5. Fallback SPA Routing cho React với High-Speed Mobile LCP Injection
+// 5. Fallback SPA Routing cho React với Dynamic Server-Side SEO & High-Speed Mobile LCP Injection
 app.get('*', async (req, res) => {
   const indexPath = path.join(publicDir, 'index.html')
   const rawHtml = getIndexHtml(indexPath)
@@ -290,55 +294,59 @@ app.get('*', async (req, res) => {
 
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
 
-  // Tối ưu tải trang chủ: FCP & LCP siêu tốc cho cả Mobile và PC
-  if (req.path === '/' || req.path === '/index.html') {
-    try {
-      const banners = await getCachedBanners()
-      const ua = req.headers['user-agent'] || ''
-      const isMobileReq = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
+  try {
+    // 1. Tự động trích xuất & tiêm thẻ SEO động theo URL (Open Graph / Zalo / Facebook / Twitter)
+    const seoData = await getSeoForRequest(req)
+    let html = injectSeoToHtml(rawHtml, seoData)
 
-      const targetBanner = isMobileReq
-        ? (banners.find((b) => b.device_type === 'mobile') || banners.find((b) => b.device_type === 'all') || banners[0])
-        : (banners.find((b) => b.device_type === 'pc' || b.device_type === 'all' || !b.device_type) || banners[0])
+    // 2. Tối ưu tải trang chủ: FCP & LCP siêu tốc cho cả Mobile và PC
+    if (req.path === '/' || req.path === '/index.html') {
+      try {
+        const banners = await getCachedBanners()
+        const ua = req.headers['user-agent'] || ''
+        const isMobileReq = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
 
-      const rawHeroUrl = targetBanner
-        ? ((isMobileReq && targetBanner.image_mobile) ? targetBanner.image_mobile : (targetBanner.image_url || targetBanner.image))
-        : null
+        const targetBanner = isMobileReq
+          ? (banners.find((b) => b.device_type === 'mobile') || banners.find((b) => b.device_type === 'all') || banners[0])
+          : (banners.find((b) => b.device_type === 'pc' || b.device_type === 'all' || !b.device_type) || banners[0])
 
-      let html = rawHtml
+        const rawHeroUrl = targetBanner
+          ? ((isMobileReq && targetBanner.image_mobile) ? targetBanner.image_mobile : (targetBanner.image_url || targetBanner.image))
+          : null
 
-      // 1. Cập nhật preload link cho ảnh Hero LCP
-      if (rawHeroUrl) {
-        const preloadTag = `<link rel="preload" as="image" href="${rawHeroUrl}" fetchpriority="high" />`
-        if (html.includes('<!-- __HERO_LCP_PRELOAD__ -->')) {
+        // A. Cập nhật preload link cho ảnh Hero LCP
+        if (rawHeroUrl) {
+          const preloadTag = `<link rel="preload" as="image" href="${rawHeroUrl}" fetchpriority="high" />`
+          if (html.includes('<!-- __HERO_LCP_PRELOAD__ -->')) {
+            html = html.replace(
+              /<!-- __HERO_LCP_PRELOAD__ -->[\s\S]*?(?=<link rel="stylesheet"|<link rel="preload" as="style"|<script|<\/head>)/i,
+              `<!-- __HERO_LCP_PRELOAD__ -->\n    ${preloadTag}\n    `
+            )
+          }
+        }
+
+        // B. Tiêm dữ liệu banner ban đầu loại bỏ waterfall request
+        const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify({ banners })};</script>`
+        html = html.replace('</head>', `  ${initialDataScript}\n</head>`)
+
+        // C. Tiêm ảnh Hero vào shell HTML để hiển thị tức thì khi nhận byte đầu tiên
+        if (rawHeroUrl && html.includes('<!-- __HERO_SHELL_IMAGE__ -->')) {
+          const shellImageTag = `<!-- __HERO_SHELL_IMAGE__ -->\n        <img src="${rawHeroUrl}" alt="${targetBanner.title || 'QA Stories Studio'}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" fetchpriority="high" decoding="async" />`
           html = html.replace(
-            /<!-- __HERO_LCP_PRELOAD__ -->[\s\S]*?(?=<link rel="stylesheet"|<link rel="preload" as="style"|<script|<\/head>)/i,
-            `<!-- __HERO_LCP_PRELOAD__ -->\n    ${preloadTag}\n    `
+            /<!-- __HERO_SHELL_IMAGE__ -->[\s\S]*?(?=<div style="position:absolute;bottom:0|<script)/i,
+            shellImageTag + '\n        '
           )
         }
+      } catch (errHero) {
+        logger.warn(`Lỗi tối ưu Hero LCP: ${errHero.message}`)
       }
-
-      // 2. Tiêm dữ liệu banner ban đầu loại bỏ waterfall request
-      const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify({ banners })};</script>`
-      html = html.replace('</head>', `  ${initialDataScript}\n</head>`)
-
-      // 3. Tiêm ảnh Hero vào shell HTML để hiển thị tức thì khi nhận byte đầu tiên
-      if (rawHeroUrl && html.includes('<!-- __HERO_SHELL_IMAGE__ -->')) {
-        const shellImageTag = `<!-- __HERO_SHELL_IMAGE__ -->\n        <img src="${rawHeroUrl}" alt="${targetBanner.title || 'QA Stories Studio'}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;" fetchpriority="high" decoding="async" />`
-        html = html.replace(
-          /<!-- __HERO_SHELL_IMAGE__ -->[\s\S]*?(?=<div style="position:absolute;bottom:0|<script)/i,
-          shellImageTag + '\n        '
-        )
-      }
-
-      return res.type('html').send(html)
-    } catch (e) {
-      logger.warn(`Lỗi tạo index.html tối ưu: ${e.message}`)
-      return res.type('html').send(rawHtml)
     }
-  }
 
-  return res.type('html').send(rawHtml)
+    return res.type('html').send(html)
+  } catch (errSeo) {
+    logger.warn(`Lỗi tạo SEO HTML: ${errSeo.message}`)
+    return res.type('html').send(rawHtml)
+  }
 })
 
 // Central Error Handler
