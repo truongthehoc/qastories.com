@@ -37,7 +37,13 @@ export default function SettingsManager() {
   const [saving, setSaving] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingSeoImage, setUploadingSeoImage] = useState(false)
+  const [previewImgError, setPreviewImgError] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
+
+  // Tự động reset trạng thái lỗi ảnh khi người dùng đổi link ảnh
+  useEffect(() => {
+    setPreviewImgError(false)
+  }, [form?.seo_image])
 
   const [form, setForm] = useState({
     site_url: 'https://qastories.com',
@@ -806,26 +812,49 @@ export default function SettingsManager() {
                 <div className="bg-slate-50 p-3 sm:p-4 rounded-2xl border border-slate-200 space-y-3">
                   <div className="bg-white rounded-xl overflow-hidden border border-slate-200/90 shadow-sm transition-all hover:shadow-md">
                     {/* Hình ảnh Card */}
-                    <div className="relative aspect-[1.91/1] w-full bg-slate-900 overflow-hidden flex items-center justify-center">
-                      {form.seo_image ? (
+                    <div className="relative aspect-[1.91/1] w-full bg-slate-100 overflow-hidden flex items-center justify-center">
+                      {form.seo_image && !previewImgError ? (
                         <img
+                          key={form.seo_image}
                           src={form.seo_image}
                           alt="SEO Preview"
                           className="w-full h-full object-cover"
+                          loading="eager"
+                          onError={() => setPreviewImgError(true)}
+                          onLoad={() => setPreviewImgError(false)}
                         />
                       ) : (
-                        <img
-                          src="/og-image.jpg"
-                          alt="SEO Preview"
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.style.display = 'none'
-                          }}
-                        />
+                        <div className="w-full h-full bg-gradient-to-br from-stone-900 via-stone-800 to-stone-950 flex flex-col items-center justify-center text-center p-4 relative select-none">
+                          <div className="absolute inset-3 border border-primary/20 rounded-xl pointer-events-none"></div>
+                          <Camera size={28} className="text-primary mb-1.5 opacity-90" />
+                          <span className="font-heading font-bold text-white text-base tracking-wider">
+                            {form.brand_name || 'QA Stories'}
+                          </span>
+                          <span className="text-stone-300 text-[10px] mt-0.5 max-w-[80%] truncate">
+                            {form.brand_slogan || 'Studio Chụp Ảnh Em Bé & Gia Đình'}
+                          </span>
+                          {previewImgError && (
+                            <span className="text-amber-400 text-[9px] mt-1 bg-black/40 px-2 py-0.5 rounded">
+                              (Đang hiển thị banner mặc định)
+                            </span>
+                          )}
+                        </div>
                       )}
-                      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-xs text-white text-[9px] px-2 py-0.5 rounded font-mono font-medium">
+                      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-xs text-white text-[9px] px-2 py-0.5 rounded font-mono font-medium z-10">
                         1200 x 630
                       </div>
+                      {form.seo_image && !previewImgError && (
+                        <a
+                          href={form.seo_image}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="absolute bottom-2 right-2 bg-black/70 hover:bg-black text-white text-[9px] px-2 py-1 rounded-md font-medium z-10 flex items-center gap-1 transition-colors"
+                          title="Xem ảnh gốc ở tab mới"
+                        >
+                          <ExternalLink size={10} />
+                          <span>Xem ảnh</span>
+                        </a>
+                      )}
                     </div>
 
                     {/* Nội dung Card */}
