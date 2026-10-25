@@ -275,15 +275,18 @@ app.get('/og-image.jpg', serveOgImage)
 // 4. API Routes
 app.use('/api', apiRoutes)
 
-// In-memory cache of built index.html
+// In-memory cache of built index.html (tự động làm mới khi file index.html thay đổi mtime sau git pull)
 let indexHtmlCache = null
+let indexHtmlMtime = 0
 function getIndexHtml(indexPath) {
   if (!fs.existsSync(indexPath)) return null
-  if (process.env.NODE_ENV === 'production' && indexHtmlCache) {
-    return indexHtmlCache
-  }
   try {
+    const stat = fs.statSync(indexPath)
+    if (process.env.NODE_ENV === 'production' && indexHtmlCache && indexHtmlMtime === stat.mtimeMs) {
+      return indexHtmlCache
+    }
     indexHtmlCache = fs.readFileSync(indexPath, 'utf-8')
+    indexHtmlMtime = stat.mtimeMs
     return indexHtmlCache
   } catch (e) {
     return null
