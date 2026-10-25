@@ -335,7 +335,7 @@ export async function serveOgImage(req, res) {
         </defs>
         <rect width="1200" height="630" fill="url(#bg)"/>
         <rect x="40" y="40" width="1120" height="550" rx="24" fill="none" stroke="rgba(255, 122, 47, 0.25)" stroke-width="2"/>
-        <text x="600" y="270" text-anchor="middle" fill="url(#gold)" font-family="serif, 'Playfair Display', Georgia" font-size="72" font-weight="bold" letter-spacing="4">${escapeSvg(studioName)}</text>
+        <text x="600" y="270" text-anchor="middle" fill="url(#gold)" font-family="'Playfair Display', 'Times New Roman', serif" font-size="72" font-weight="bold" letter-spacing="4">${escapeSvg(studioName)}</text>
         <text x="600" y="340" text-anchor="middle" fill="#FFFFFF" font-family="'Nunito', sans-serif" font-size="28" font-weight="600" letter-spacing="2">${escapeSvg(slogan)}</text>
         <text x="600" y="410" text-anchor="middle" fill="#A8A29E" font-family="'Nunito', sans-serif" font-size="20">Newborn • Thôi Nôi • Em Bé • Gia Đình</text>
       </svg>

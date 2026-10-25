@@ -13,11 +13,11 @@ export default {
         offwhite: "#FFF9F5",
       },
       fontFamily: {
-        heading: ['"Playfair Display"', 'Georgia', 'serif'],
+        heading: ['"Playfair Display"', '"Times New Roman"', 'Times', 'serif'],
         body: ['"Nunito"', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
         mulish: ['"Mulish"', 'system-ui', 'sans-serif'],
         admin: ['"Mulish"', 'system-ui', 'sans-serif'],
-        serif: ['"Playfair Display"', 'Georgia', 'serif'],
+        serif: ['"Playfair Display"', '"Times New Roman"', 'Times', 'serif'],
       },
       animation: {
         "fade-in": "fadeIn 0.6s ease-out forwards",
