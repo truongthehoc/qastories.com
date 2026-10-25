@@ -8,6 +8,7 @@ import packagesRouter from './packages.js'
 import settingsRouter from './settings.js'
 import analyticsRouter from './analytics.js'
 import adminRouter from './admin.js'
+import advertisementsRouter from './advertisements.js'
 
 const router = express.Router()
 
@@ -20,6 +21,7 @@ router.use('/packages', packagesRouter)
 router.use('/settings', settingsRouter)
 router.use('/analytics', analyticsRouter)
 router.use('/admin', adminRouter)
+router.use('/advertisements', advertisementsRouter)
 
 router.get('/health', (req, res) => {
   res.json({

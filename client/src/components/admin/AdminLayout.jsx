@@ -22,6 +22,7 @@ import {
   Crown,
   PanelBottom,
   User,
+  Megaphone,
 } from 'lucide-react'
 import { useAdminAuth } from '../../context/AdminAuthContext'
 import { useSettings } from '../../context/SettingsContext'
@@ -38,6 +39,7 @@ const navSections = [
     title: 'Quản Lý Nội Dung',
     items: [
       { path: '/admin/banners', label: 'Trang Chủ', icon: HomeIcon, permission: 'banners' },
+      { path: '/admin/advertisements', label: 'Quảng Cáo & Popup', icon: Megaphone, permission: 'banners' },
       { path: '/admin/albums', label: 'Albums & Kho Ảnh', icon: Images, permission: 'albums' },
       { path: '/admin/packages', label: 'Gói Dịch Vụ', icon: Tag, permission: 'packages' },
       { path: '/admin/about', label: 'Nội Dung Giới Thiệu', icon: UserCheck, permission: 'about' },

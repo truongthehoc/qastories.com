@@ -4,13 +4,15 @@ import path from 'path'
 const storage = multer.memoryStorage()
 
 const fileFilter = (req, file, cb) => {
-  const allowedExts = /\.(jpe?g|png|webp|avif|gif|svg)$/i
-  const isImageMime = /^image\//i.test(file.mimetype)
+  const allowedImageExts = /\.(jpe?g|png|webp|avif|gif|svg)$/i
+  const allowedVideoExts = /\.(mp4|webm|mov|ogg|m4v)$/i
+  const isImage = /^image\//i.test(file.mimetype) || allowedImageExts.test(path.extname(file.originalname).toLowerCase())
+  const isVideo = /^video\//i.test(file.mimetype) || allowedVideoExts.test(path.extname(file.originalname).toLowerCase())
 
-  if (isImageMime || allowedExts.test(path.extname(file.originalname).toLowerCase())) {
+  if (isImage || isVideo) {
     cb(null, true)
   } else {
-    cb(new Error('Chỉ chấp nhận file ảnh (JPG, PNG, WebP, AVIF, GIF, SVG)'))
+    cb(new Error('Chỉ chấp nhận file ảnh (JPG, PNG, WebP, GIF) hoặc video (MP4, WebM, MOV)'))
   }
 }
 
@@ -18,8 +20,8 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // Cho phép tới 50MB để tiếp nhận ảnh chất lượng cao
-    files: 100, // Hỗ trợ tải lên tới 100 ảnh cùng lúc
+    fileSize: 100 * 1024 * 1024, // Hỗ trợ tới 100MB cho cả ảnh chất lượng cao và video quảng cáo
+    files: 100,
   },
 })
 

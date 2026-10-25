@@ -6,6 +6,7 @@ import ScrollToTop from './components/ui/ScrollToTop'
 import FloatingContact from './components/ui/FloatingContact'
 import QuickAccess from './components/ui/QuickAccess'
 import WebsiteEffects from './components/ui/WebsiteEffects'
+import AdDisplay from './components/ui/AdDisplay'
 import { SettingsProvider } from './context/SettingsContext'
 import { AdminAuthProvider } from './context/AdminAuthContext'
 import usePageTracking from './hooks/usePageTracking'
@@ -34,6 +35,7 @@ const SettingsManager = lazy(() => import('./pages/admin/SettingsManager'))
 const AnalyticsView = lazy(() => import('./pages/admin/AnalyticsView'))
 const UsersManager = lazy(() => import('./pages/admin/UsersManager'))
 const FooterManager = lazy(() => import('./pages/admin/FooterManager'))
+const AdvertisementsManager = lazy(() => import('./pages/admin/AdvertisementsManager'))
 
 function LoadingSpinner() {
   return (
@@ -62,6 +64,7 @@ function PublicLayout() {
       <QuickAccess />
       <FloatingContact />
       <WebsiteEffects />
+      <AdDisplay />
     </div>
   )
 }
@@ -106,6 +109,7 @@ export default function App() {
                 <Route path="bookings" element={<BookingsManager />} />
                 <Route path="packages" element={<PackagesManager />} />
                 <Route path="banners" element={<BannersManager />} />
+                <Route path="advertisements" element={<AdvertisementsManager />} />
                 <Route path="quick-access" element={<QuickAccessManager />} />
                 <Route path="albums" element={<AlbumsManager />} />
                 <Route path="about" element={<AboutManager />} />

@@ -83,10 +83,11 @@ export const uploadPhotos = async (req, res, next) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
           const isSvg = file.mimetype === 'image/svg+xml' || file.originalname.toLowerCase().endsWith('.svg')
           const isGif = file.mimetype === 'image/gif' || file.originalname.toLowerCase().endsWith('.gif')
+          const isVideo = file.mimetype?.startsWith('video/') || /\.(mp4|webm|mov|ogg|m4v)$/i.test(file.originalname)
 
-          // Với SVG hoặc GIF động, lưu trực tiếp không convert
-          if (isSvg || isGif) {
-            const ext = path.extname(file.originalname).toLowerCase()
+          // Với SVG, GIF hoặc Video, lưu trực tiếp không qua nén ảnh Sharp
+          if (isSvg || isGif || isVideo) {
+            const ext = path.extname(file.originalname).toLowerCase() || (isVideo ? '.mp4' : '.jpg')
             const filename = `${uniqueSuffix}${ext}`
             const outputPath = path.join(targetDir, filename)
             fs.writeFileSync(outputPath, file.buffer)
@@ -97,6 +98,7 @@ export const uploadPhotos = async (req, res, next) => {
               originalname: file.originalname,
               size: stat.size,
               url: fileUrl,
+              isVideo,
             }
           }
 

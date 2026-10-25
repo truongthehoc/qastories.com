@@ -128,3 +128,28 @@ CREATE TABLE IF NOT EXISTS `packages` (
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+-- 9. B?ng Qu?n lý Qu?ng Cáo & Popup (Advertisements)
+CREATE TABLE IF NOT EXISTS dvertisements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  	itle VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  media_type ENUM('image', 'video') DEFAULT 'image',
+  media_url VARCHAR(500) NOT NULL,
+  media_thumbnail VARCHAR(500) NULL,
+  link_url VARCHAR(500) NULL,
+  utton_text VARCHAR(100) DEFAULT 'Xem Ngay',
+  placement VARCHAR(50) DEFAULT 'popup' COMMENT 'popup, top_bar, floating_bottom_right, floating_bottom_left, in_page',
+  	arget_pages VARCHAR(255) DEFAULT 'all' COMMENT 'all, home, album, about, contact',
+  popup_delay INT DEFAULT 3 COMMENT 'S? giây ch? tru?c khi popup hi?n th?',
+  popup_duration INT DEFAULT 0 COMMENT 'S? giây hi?n th? tru?c khi t? d?ng dóng (0 = không t? dóng)',
+  popup_frequency VARCHAR(50) DEFAULT 'once_per_session' COMMENT 'always, once_per_session, once_per_day',
+  start_date DATETIME NULL,
+  end_date DATETIME NULL,
+  is_active TINYINT(1) DEFAULT 1,
+  sort_order INT DEFAULT 0,
+  iews_count INT DEFAULT 0,
+  clicks_count INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
